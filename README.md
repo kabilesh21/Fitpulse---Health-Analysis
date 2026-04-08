@@ -1,206 +1,164 @@
-"""
-FitPulse Health Anomaly Detection System
-Flask backend — main application entry point
-"""
+# FitPulse-Health-Anomaly-Detection
+📘 FitPulse Health Anomaly Detection
 
-import os
-import json
-import uuid
-from flask import Flask, request, jsonify, render_template, session, send_file
-from werkzeug.utils import secure_filename
-from utils.data_processor import process_health_data
-from utils.anomaly_detector import detect_anomalies
-from utils.report_generator import generate_report, generate_pdf_report
+A Python-based data analysis project completed as part of the Infosys Springboard Virtual Internship: Python Programming.
 
-app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "fitpulse-dev-secret-2024")
+🧠 Project Overview
 
-UPLOAD_FOLDER = "uploads"
-ALLOWED_EXTENSIONS = {"csv", "xlsx", "xls"}
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MB max
+FitPulse Health Anomaly Detection is a data analysis project that uses fitness device data (heart rate, pulse rate, steps, gender, age group) to:
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+Read and process Excel data
 
-# In-memory session store (replace with Redis/DB in production)
-SESSION_STORE = {}
+Perform data cleaning and preprocessing
 
+Detect missing values
 
-def allowed_file(filename):
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+Convert values to numeric formats
 
+Calculate gender-based statistics
 
-# ─── PAGES ────────────────────────────────────────────────────────────────────
+Generate visualizations (Matplotlib / Plotly)
 
-@app.route("/")
-def home():
-    return render_template("index.html")
+Build an interactive Streamlit Web App
 
+Display meaningful insights and detect anomalies
 
-@app.route("/upload")
-def upload_page():
-    return render_template("upload.html")
+This project demonstrates practical use of Python libraries for real-world data analysis.
 
+📂 Project Structure
+FitPulse-Health-Anomaly-Detection/
+│
+├── 1_read_excel.py
+├── 2_null_check.py
+├── 3_clean_data.py
+├── 4_gender_analysis.py
+├── 5_heart_status.py
+├── 6_average_heart_rate.py
+├── 7_plot_graphs.py
+├── streamlit_app.py
+├── Fitpulse_data.xlsx
+│
+├── outputs/
+│     ├── output_screenshots.pdf  OR individual images
+│
+└── README.md
 
-@app.route("/dashboard")
-def dashboard_page():
-    return render_template("dashboard.html")
+🔧 Technologies & Libraries Used
 
+Python
 
-@app.route("/report")
-def report_page():
-    return render_template("report.html")
+Pandas (data processing)
 
+NumPy (numerical operations)
 
-# ─── API ENDPOINTS ─────────────────────────────────────────────────────────────
+Matplotlib (visualizations)
 
-@app.route("/api/upload", methods=["POST"])
-def upload_file():
-    """Handle file upload, process data, run anomaly detection."""
-    if "file" not in request.files:
-        return jsonify({"error": "No file provided"}), 400
+Plotly (interactive plots)
 
-    file = request.files["file"]
-    if file.filename == "":
-        return jsonify({"error": "No file selected"}), 400
+Scikit-learn (optional ML models)
 
-    if not allowed_file(file.filename):
-        return jsonify({"error": "Invalid file type. Please upload CSV or Excel (.xlsx/.xls)"}), 400
+Streamlit (web app interface)
 
-    # Save file
-    filename = secure_filename(f"{uuid.uuid4()}_{file.filename}")
-    filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-    file.save(filepath)
+OpenPyXL (Excel reading engine)
 
-    try:
-        # Process and clean data
-        df, processing_log = process_health_data(filepath)
+📊 Features & Tasks Performed
+✔ 1. Read Excel dataset
 
-        # Detect anomalies
-        df, anomaly_stats = detect_anomalies(df)
+Loaded Fitpulse_data.xlsx using pandas.
 
-        # Build session data
-        session_id = str(uuid.uuid4())
-        records = df.to_dict(orient="records")
-        # Convert numpy types to Python native for JSON serialization
-        for r in records:
-            for k, v in r.items():
-                if hasattr(v, "item"):
-                    r[k] = v.item()
+✔ 2. Check null values
 
-        SESSION_STORE[session_id] = {
-            "records":        records,
-            "processing_log": processing_log,
-            "anomaly_stats":  anomaly_stats,
-            "filename":       file.filename,
-        }
+Used data.isnull().sum()
 
-        # Cleanup uploaded file
-        os.remove(filepath)
+Identified missing values.
 
-        return jsonify({"session_id": session_id, "rows": len(records), "filename": file.filename})
+✔ 3. Clean and preprocess data
 
-    except Exception as e:
-        if os.path.exists(filepath):
-            os.remove(filepath)
-        return jsonify({"error": str(e)}), 500
+Converted heartbeat, steps, pulse rate to numeric
 
+Replaced invalid values
 
-@app.route("/api/dashboard/<session_id>")
-def get_dashboard_data(session_id):
-    """Return dashboard metrics and chart data."""
-    data = SESSION_STORE.get(session_id)
-    if not data:
-        return jsonify({"error": "Session expired or not found"}), 404
+Removed NaN values
 
-    records = data["records"]
-    anomaly_stats = data["anomaly_stats"]
+✔ 4. Gender-based analysis
 
-    heart_rates = [r["HeartRate"] for r in records if r.get("HeartRate") is not None]
-    steps       = [r["Steps"]     for r in records if r.get("Steps")     is not None]
-    anomalies   = [r for r in records if r.get("Anomaly") == "Yes"]
+Standardized gender column
 
-    # Heart rate classification counts
-    low_count    = sum(1 for r in records if r.get("HR_Category") == "Low")
-    normal_count = sum(1 for r in records if r.get("HR_Category") == "Normal")
-    high_count   = sum(1 for r in records if r.get("HR_Category") == "High")
+Calculated average heart rate by gender
 
-    # Gender breakdown
-    gender_counts = {}
-    for r in records:
-        g = str(r.get("Gender", "Unknown"))
-        gender_counts[g] = gender_counts.get(g, 0) + 1
+✔ 5. Visualizations
 
-    return jsonify({
-        "summary": {
-            "total_records":    len(records),
-            "avg_heart_rate":   round(sum(heart_rates) / len(heart_rates), 1) if heart_rates else 0,
-            "max_heart_rate":   max(heart_rates) if heart_rates else 0,
-            "min_heart_rate":   min(heart_rates) if heart_rates else 0,
-            "anomaly_count":    len(anomalies),
-            "anomaly_pct":      round(len(anomalies) / len(records) * 100, 1) if records else 0,
-            "filename":         data["filename"],
-        },
-        "charts": {
-            "heart_rates":    heart_rates[:200],
-            "steps":          steps[:200],
-            "hr_low":         low_count,
-            "hr_normal":      normal_count,
-            "hr_high":        high_count,
-            "gender_counts":  gender_counts,
-            "anomaly_flags":  [1 if r.get("Anomaly") == "Yes" else 0 for r in records[:200]],
-        },
-        "anomaly_stats": anomaly_stats,
-        "processing_log": data["processing_log"],
-    })
+Created:
+
+Line charts
+
+Scatter plots
+
+Gender comparison charts
+
+Interactive Plotly graphs
+
+✔ 6. Streamlit Web App
+
+An interactive app built using:
+
+streamlit run streamlit_app.py
 
 
-@app.route("/api/report/<session_id>")
-def get_report(session_id):
-    """Return detailed report data."""
-    data = SESSION_STORE.get(session_id)
-    if not data:
-        return jsonify({"error": "Session expired or not found"}), 404
+Features in Streamlit:
 
-    report = generate_report(data["records"], data["anomaly_stats"], data["processing_log"])
-    return jsonify(report)
+Display dataset
 
+Show average heart rate by gender
 
-@app.route("/api/report/<session_id>/pdf")
-def download_pdf(session_id):
-    """Generate and download PDF report."""
-    data = SESSION_STORE.get(session_id)
-    if not data:
-        return jsonify({"error": "Session expired or not found"}), 404
+Generate graphs
 
-    report = generate_report(data["records"], data["anomaly_stats"], data["processing_log"])
-    pdf_path = generate_pdf_report(report, data["filename"])
-    return send_file(pdf_path, as_attachment=True, download_name="fitpulse_report.pdf")
+Show health insights
 
+▶️ How to Run the Project
+1️⃣ Install dependencies
+pip install pandas numpy matplotlib plotly streamlit scikit-learn openpyxl
 
-@app.route("/api/records/<session_id>")
-def get_records(session_id):
-    """Return paginated records for data table."""
-    data = SESSION_STORE.get(session_id)
-    if not data:
-        return jsonify({"error": "Session expired or not found"}), 404
+2️⃣ Run Python scripts
 
-    page     = int(request.args.get("page", 1))
-    per_page = int(request.args.get("per_page", 50))
-    records  = data["records"]
-    start    = (page - 1) * per_page
-    end      = start + per_page
+Example:
 
-    return jsonify({
-        "records":    records[start:end],
-        "total":      len(records),
-        "page":       page,
-        "per_page":   per_page,
-        "total_pages": -(-len(records) // per_page),
-    })
+python 1_read_excel.py
+python 2_null_check.py
+
+3️⃣ Run the Streamlit App
+streamlit run streamlit_app.py
 
 
-# ─── ENTRY POINT ──────────────────────────────────────────────────────────────
+Your browser will open at:
 
-if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+http://localhost:8501
+
+📁 Dataset Description
+
+Fitpulse_data.xlsx contains:
+
+Customer_ID
+
+Age_Group
+
+Gender
+
+Heart Beat per Minute
+
+Pulse Rate
+
+Steps Count
+
+This data is used for visualization and anomaly detection.
+
+🖼 Outputs
+
+All project outputs (terminal outputs, charts, Streamlit screenshots) are included in:
+
+/outputs
+
+
+or inside a single PDF file:
+
+FitPulse_Output_Screenshots.pdf
