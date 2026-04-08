@@ -1,0 +1,112 @@
+# FitPulse — Health Anomaly Detection System
+
+A full-stack Flask web application that detects health anomalies in fitness datasets
+using Z-score, IQR, and Isolation Forest algorithms.
+
+---
+
+## Folder Structure
+
+```
+fitpulse/
+├── app.py                     ← Flask main application
+├── requirements.txt
+├── README.md
+├── uploads/                   ← Temp upload storage (auto-created)
+├── utils/
+│   ├── __init__.py
+│   ├── data_processor.py      ← CSV/Excel loading, cleaning, normalisation
+│   ├── anomaly_detector.py    ← Z-score, IQR, Isolation Forest detection
+│   └── report_generator.py    ← Report builder + PDF export
+├── templates/
+│   ├── base.html              ← Nav, footer, dark-mode toggle
+│   ├── index.html             ← Landing page
+│   ├── upload.html            ← Drag-and-drop file upload
+│   ├── dashboard.html         ← KPI cards + Chart.js charts
+│   └── report.html            ← Full health report + PDF download
+└── static/
+    ├── css/
+    │   └── main.css           ← Full design system (Syne + DM Sans)
+    └── js/
+        └── main.js            ← Theme toggle, scroll animations
+```
+
+---
+
+## Quick Start
+
+### 1. Create virtual environment
+```bash
+cd fitpulse
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+```
+
+### 2. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Run
+```bash
+python app.py
+```
+
+Open **http://localhost:5000** in your browser.
+
+---
+
+## Required CSV/Excel Columns
+
+| Column      | Description              | Example   |
+|-------------|--------------------------|-----------|
+| `Gender`    | Male / Female            | `Male`    |
+| `Steps`     | Daily step count         | `8200`    |
+| `HeartRate` | Heart rate in bpm        | `72`      |
+
+Column names are auto-detected from common aliases (e.g. `hr`, `bpm`, `heart_rate`).
+
+---
+
+## Anomaly Detection Methods
+
+| Method           | Description                                      |
+|------------------|--------------------------------------------------|
+| Z-score          | Flags values > 2.5 std deviations from mean     |
+| IQR              | Flags values outside 1.5× interquartile range   |
+| Isolation Forest | ML model detecting multivariate outliers        |
+| Clinical Rules   | Flags HR > 150 or < 40 bpm unconditionally      |
+
+A record is marked **Anomaly = Yes** if ≥ 2 methods agree, or if it hits a clinical extreme.
+
+---
+
+## Pages
+
+| Route        | Description                  |
+|--------------|------------------------------|
+| `/`          | Landing page with hero       |
+| `/upload`    | File upload with drag & drop |
+| `/dashboard` | Charts + KPI metrics         |
+| `/report`    | Full report + PDF download   |
+
+---
+
+## API Endpoints
+
+| Endpoint                      | Method | Description                      |
+|-------------------------------|--------|----------------------------------|
+| `/api/upload`                 | POST   | Upload and process file          |
+| `/api/dashboard/<session_id>` | GET    | Dashboard metrics + chart data   |
+| `/api/report/<session_id>`    | GET    | Full report JSON                 |
+| `/api/report/<session_id>/pdf`| GET    | Download PDF report              |
+| `/api/records/<session_id>`   | GET    | Paginated raw records            |
+
+---
+
+## Notes
+
+- Session data is stored in-memory. For production, use Redis or a database.
+- PDF export requires `reportlab`. Falls back to `.txt` if not installed.
+- Max upload size: 16 MB.
+- Tested with Python 3.10+.
