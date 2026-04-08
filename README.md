@@ -126,14 +126,6 @@ Example:
 python 1_read_excel.py
 python 2_null_check.py
 
-3️⃣ Run the Streamlit App
-streamlit run streamlit_app.py
-
-
-Your browser will open at:
-
-http://localhost:8501
-
 📁 Dataset Description
 
 Fitpulse_data.xlsx contains:
