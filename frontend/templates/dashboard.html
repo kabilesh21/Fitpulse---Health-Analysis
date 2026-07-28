@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <div class="page-header-row">
+      <div>
+        {% if session.get('role') == 'doctor' %}
+          <h1 class="page-title">Strataform Clinical Review: <span id="dash-patient-name" style="color: var(--blue);">Patient File</span> 📊</h1>
+          <p class="page-sub">Physician Review Console for Dr. {{ session.username }}</p>
+        {% else %}
+          <h1 class="page-title">Vitals Dashboard 📊</h1>
+          <p class="page-sub">Interactive diagnostic dashboard showing anomalies, risk levels, and personal baselines.</p>
+        {% endif %}
+      </div>
+      <div id="dash-header-actions" class="hidden" style="display: flex; gap: 10px; align-items: center;">
+        <button id="btn-clear-session" class="btn btn-outline" style="border-color: var(--red); color: var(--red); padding: 8px 16px; font-size: 13.5px; font-weight: 700; border-radius: 99px; cursor: pointer;">
+          🗑️ Clear Dataset
+        </button>
+        {% if session.get('role') == 'doctor' %}
+          <a id="btn-doc-report-link" href="/report" class="btn btn-primary">
+            📝 Compile Strataform Report
+          </a>
+        {% else %}
+          <a href="/report" class="btn btn-primary">
+            📝 Compile Medical Report
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container dash-container">
+  <div id="no-session-content" class="lock-page-overlay">
+    <div class="lock-shield">🔒🚨</div>
+    <h3>Vitals Diagnostics Locked 🩺</h3>
+    <p>
+      Please upload the CSV or Excel sheet file or enter vital parameters manually at the Admission Desk to calculate diagnostic metrics.
+    </p>
+    <a href="/upload" class="btn btn-primary btn-lg">💉 Go to Admission Desk to Initialize 🏥</a>
+  </div>
+
+  <!-- Dashboard content (hidden by default) -->
+  <div id="dashboard-content" class="hidden">
+    
+    <!-- Early Warning Alerts Banner -->
+    <div id="early-warning-banner" class="alert alert-error hidden" style="margin-bottom: 2rem; padding: 15px 20px; border-radius: var(--radius); border-left: 5px solid var(--red); display: flex; align-items: center; gap: 12px;">
+      <span style="font-size: 24px;">🚨</span>
+      <div>
+        <strong style="display: block; font-size: 14.5px;">Early Warning Health Alert</strong>
+        <span id="early-warning-text" style="font-size: 13.5px; opacity: 0.95;">Patient vitals show consecutive negative trends. Please review clinical metrics.</span>
+      </div>
+    </div>
+
+    <!-- KPI cards grid -->
+    <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px;">
+      
+      <!-- Hidden Backup Element for JS compatibility -->
+      <span id="kpi-records" style="display: none;">0</span>
+
+      <!-- Card 1: Vitals Average -->
+      <div class="kpi-card" id="kpi-hr-card" style="background: var(--bg-2); border: 1px solid var(--border); padding: 1.2rem; border-radius: 16px;">
+        <div class="kpi-icon purple" style="font-size: 24px; margin-bottom: 8px;">❤️</div>
+        <div class="kpi-info">
+          <span class="kpi-label" style="font-size: 11px; color: var(--text-2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Vitals Average</span>
+          <div class="kpi-value" style="font-size: 15px; font-weight: 700; color: var(--text); display: flex; flex-direction: column; gap: 3px; margin-top: 5px;">
+            <span>HR: <span id="kpi-avg-hr" style="font-size: 16px; font-weight: 800;">0</span> <small style="font-size: 10px; color: var(--text-3); font-weight: normal;">bpm</small></span>
+            <span>SpO₂: <span id="kpi-avg-spo2" style="font-size: 16px; font-weight: 800;">0</span>%</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Card 2: Daily Averages -->
+      <div class="kpi-card" style="background: var(--bg-2); border: 1px solid var(--border); padding: 1.2rem; border-radius: 16px;">
+        <div class="kpi-icon green" style="font-size: 24px; margin-bottom: 8px;">🏃</div>
+        <div class="kpi-info">
+          <span class="kpi-label" style="font-size: 11px; color: var(--text-2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Daily Averages</span>
+          <div class="kpi-value" style="font-size: 15px; font-weight: 700; color: var(--text); display: flex; flex-direction: column; gap: 3px; margin-top: 5px;">
+            <span>Steps: <span id="kpi-avg-steps" style="font-size: 16px; font-weight: 800;">0</span></span>
+            <span>Burned: <span id="kpi-avg-calories" style="font-size: 16px; font-weight: 800;">0</span> <small style="font-size: 10px; color: var(--text-3); font-weight: normal;">kcal</small></span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Card 3: Current Risk Assessment (Orange style) -->
+      <div class="kpi-card" id="kpi-risk-card" style="background: rgba(249, 115, 22, 0.08); border: 1.5px solid rgba(249, 115, 22, 0.35); padding: 1.2rem; border-radius: 16px; transition: var(--transition);">
+        <div class="kpi-icon orange" style="font-size: 24px; margin-bottom: 8px;">🛡️</div>
+        <div class="kpi-info">
+          <span class="kpi-label" style="font-size: 11px; color: #ea580c; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Current Risk Assessment</span>
+          <div class="kpi-value" style="font-size: 19px; font-weight: 900; color: #ea580c; margin-top: 5px;" id="kpi-risk-value">
+            0 / 100
+          </div>
+          <span id="kpi-risk-level" class="risk-meter-level risk-level-low" style="font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 99px; margin-top: 6px; display: inline-block;">LOW</span>
+        </div>
+      </div>
+      
+      <!-- Card 4: Anomalies Detected (Pink/Red style) -->
+      <div class="kpi-card" id="kpi-anom-card" style="background: rgba(225, 29, 72, 0.08); border: 1.5px solid rgba(225, 29, 72, 0.35); padding: 1.2rem; border-radius: 16px; transition: var(--transition);">
+        <div class="kpi-icon red" style="font-size: 24px; margin-bottom: 8px;">⚠️</div>
+        <div class="kpi-info">
+          <span class="kpi-label" style="font-size: 11px; color: #e11d48; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Anomalies Detected</span>
+          <div class="kpi-value" style="font-size: 19px; font-weight: 900; color: #e11d48; margin-top: 5px;">
+            <span id="kpi-anom-count">0</span>
+            <small class="kpi-unit" id="kpi-anom-pct" style="font-size: 11px; color: #e11d48; font-weight: 600; margin-left: 2px;">(0%)</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts row -->
+    <div class="charts-row charts-row-2">
+      <!-- Line Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>📈 Patient Vitals Waveforms</h3>
+          <span class="chart-tag" id="chart-trend-tag">Healthy Vitals</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart-trends"></canvas>
+        </div>
+      </div>
+      
+      <!-- Scatter Plot -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>🩺 Outliers Scatter Chart</h3>
+          <span style="font-size:12px; font-weight:700; color:var(--text-3);">Heart Rate vs Steps</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart-scatter"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom logs and methods -->
+    <div class="charts-row">
+      <!-- Methods breakdown -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>🔬 Diagnostic Voting Consensus</h3>
+        </div>
+        <div class="methods-grid">
+          <div class="mc-bar">
+            <span class="mc-name">Clinical Rulebook / Risk Alerts</span>
+            <span class="mc-count" id="mc-clinical">0</span>
+          </div>
+          <div class="mc-bar">
+            <span class="mc-name">Z-Score HR Deviation (>2.5 std)</span>
+            <span class="mc-count" id="mc-zscore">0</span>
+          </div>
+          <div class="mc-bar">
+            <span class="mc-name">Interquartile Range Fences (1.5x IQR)</span>
+            <span class="mc-count" id="mc-iqr">0</span>
+          </div>
+          <div class="mc-bar">
+            <span class="mc-name">Isolation Forest ML (Multivariate Outliers)</span>
+            <span class="mc-count" id="mc-iforest">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive Calorie Burn Calculator Row -->
+    <div style="margin-top: 2rem; display: flex; justify-content: center; width: 100%;">
+      <!-- Interactive Calorie Burn Calculator -->
+      <div class="chart-card" style="max-width: 600px; width: 100%;">
+        <div class="chart-header">
+          <h3>🔥 Interactive Calorie Burner</h3>
+        </div>
+        <div class="widget-calc-body" style="margin-top: 10px; display: flex; flex-direction: column; gap: 12px;">
+          <p style="font-size: 13.5px; color: var(--text-2);">Estimate active energy expenditure based on current average heart rate.</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-3);">Duration (Minutes)</label>
+              <input type="number" id="calc-duration" value="30" min="1" max="480" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-glow); background: var(--bg); color: var(--text); font-weight: 700; margin-top: 4px;">
+            </div>
+            <div>
+              <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-3);">Patient Age (Years)</label>
+              <input type="number" id="calc-age" value="28" min="1" max="120" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-glow); background: var(--bg); color: var(--text); font-weight: 700; margin-top: 4px;">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-3);">Gender Category</label>
+              <select id="calc-gender" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-glow); background: var(--bg); color: var(--text); font-weight: 700; margin-top: 4px;">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-3);">Active HR (bpm)</label>
+              <input type="number" id="calc-hr" value="76" min="30" max="250" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-glow); background: var(--bg); color: var(--text); font-weight: 700; margin-top: 4px;">
+            </div>
+          </div>
+          <button id="btn-calc-calories" class="btn btn-primary" style="margin-top: 6px; padding: 10px;">🔥 Calculate Calories</button>
+          
+          <div style="background: var(--blue-bg); padding: 12px; border-radius: 10px; text-align: center; border: 1px solid var(--border-glow); margin-top: 6px;">
+            <span style="font-size: 11px; font-weight:700; color: var(--text-3); text-transform: uppercase; display: block; margin-bottom: 2px;">Estimated Active Burn</span>
+            <span style="font-family:'Outfit',sans-serif; font-size: 28px; font-weight:800; color:var(--blue);" id="calc-result">0 <small style="font-size:14px; color:var(--text-3); font-weight:600;">kcal</small></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer actions -->
+    <div class="dash-actions">
+      <a href="/report" id="btn-doc-report-link" class="btn btn-primary btn-lg">📝 Compile Medical Report</a>
+      <a href="/upload" id="btn-doc-upload-link" class="btn btn-outline btn-lg">💉 Admission Desk</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

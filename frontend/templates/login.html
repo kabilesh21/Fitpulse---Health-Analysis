@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-wrapper" style="display: flex; align-items: center; justify-content: center; min-height: 85vh; padding: 2rem 1rem; position: relative; overflow: hidden; width: 100%;">
+  <!-- Ambient background glowing blobs -->
+  <div class="gemini-glow-orb gemini-glow-1"></div>
+  <div class="gemini-glow-orb gemini-glow-2"></div>
+
+  <div class="auth-container" style="max-width: 480px; width: 100%; z-index: 2; background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 24px; padding: 2.25rem 2rem; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04); transition: var(--transition);">
+    
+    <!-- Portal switcher tabs -->
+    <div class="auth-portal-tabs" style="display: flex; border-bottom: 1px solid var(--border); margin-bottom: 25px;">
+      <button id="tab-patient" class="portal-tab active" onclick="switchPortal('patient')" style="flex: 1; padding: 12px; font-weight: 700; font-size: 14.5px; border: none; background: none; color: var(--text-2); cursor: pointer; transition: var(--transition); border-bottom: 2px solid transparent;">
+        👤 Patient Portal
+      </button>
+      <button id="tab-doctor" class="portal-tab" onclick="switchPortal('doctor')" style="flex: 1; padding: 12px; font-weight: 700; font-size: 14.5px; border: none; background: none; color: var(--text-2); cursor: pointer; transition: var(--transition); border-bottom: 2px solid transparent;">
+        🩺 Doctor Access
+      </button>
+    </div>
+
+    <!-- ── PATIENT PORTAL ── -->
+    <div id="portal-patient" class="portal-pane active">
+      <!-- Sub-Tabs for Sign In / Sign Up -->
+      <div class="patient-sub-tabs" style="display: flex; gap: 8px; margin-bottom: 25px; background: rgba(241, 245, 249, 0.8); padding: 5px; border-radius: 12px; border: 1px solid rgba(226, 232, 240, 0.6);">
+        <button id="subtab-signin" class="sub-tab active" onclick="switchPatientAction('signin')" style="flex: 1; padding: 10px; font-weight: 600; font-size: 13px; border: none; border-radius: 9px; background: white; color: var(--text); cursor: pointer; transition: var(--transition); box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+          Sign In
+        </button>
+        <button id="subtab-signup" class="sub-tab" onclick="switchPatientAction('signup')" style="flex: 1; padding: 10px; font-weight: 600; font-size: 13px; border: none; border-radius: 9px; background: transparent; color: var(--text-2); cursor: pointer; transition: var(--transition);">
+          Create Account
+        </button>
+      </div>
+
+      <!-- Errors -->
+      {% if login_error %}
+      <div class="alert alert-error" style="margin-bottom: 20px; padding: 12px 16px; border-radius: 12px; background: rgba(244, 63, 94, 0.08); color: #f43f5e; font-size: 13.5px; font-weight: 600; border: 1px solid rgba(244, 63, 94, 0.15); display: flex; align-items: center; gap: 8px;">
+        <span>❌</span> <span>{{ login_error }}</span>
+      </div>
+      {% endif %}
+      {% if register_error %}
+      <div class="alert alert-error" style="margin-bottom: 20px; padding: 12px 16px; border-radius: 12px; background: rgba(244, 63, 94, 0.08); color: #f43f5e; font-size: 13.5px; font-weight: 600; border: 1px solid rgba(244, 63, 94, 0.15); display: flex; align-items: center; gap: 8px;">
+        <span>❌</span> <span>{{ register_error }}</span>
+      </div>
+      {% endif %}
+
+      <!-- Patient Sign In Form -->
+      <form id="form-patient-signin" action="/login" method="POST" class="auth-form active" style="display: flex; flex-direction: column; gap: 18px;">
+        <h2 style="font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 800; text-align: left; margin: 0; color: var(--text);">
+          Welcome back
+        </h2>
+        <p style="font-size: 13.5px; color: var(--text-2); text-align: left; margin-top: -10px; margin-bottom: 5px;">
+          Access your clinical diagnostic workspace.
+        </p>
+        
+        <div class="form-group">
+          <label for="p-username" class="form-label">Username</label>
+          <input type="text" id="p-username" name="username" class="form-input" placeholder="e.g. JohnDoe" required autocomplete="username">
+        </div>
+        
+        <div class="form-group">
+          <label for="p-password" class="form-label">Password</label>
+          <input type="password" id="p-password" name="password" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-full btn-lg" style="margin-top: 10px; background: linear-gradient(135deg, #f97316, #ea580c); border: none; height: 46px; border-radius: 99px; font-weight: 700; font-size: 14.5px; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.2);">
+          🔑 Access Clinical Suite
+        </button>
+      </form>
+
+      <!-- Patient Sign Up Form -->
+      <form id="form-patient-signup" action="/register" method="POST" class="auth-form" style="display: none; flex-direction: column; gap: 15px;">
+        <h2 style="font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 800; text-align: left; margin: 0; color: var(--text);">
+          Create account
+        </h2>
+        <p style="font-size: 13.5px; color: var(--text-2); text-align: left; margin-top: -8px; margin-bottom: 5px;">
+          Register to log vital diagnostics.
+        </p>
+
+        <div class="form-group">
+          <label for="reg-username" class="form-label">Username</label>
+          <input type="text" id="reg-username" name="username" class="form-input" placeholder="Choose a username" required autocomplete="username">
+        </div>
+        
+        <div class="form-group">
+          <label for="reg-password" class="form-label">Password</label>
+          <input type="password" id="reg-password" name="password" class="form-input" placeholder="••••••••" required autocomplete="new-password">
+        </div>
+
+        <div style="display: flex; gap: 15px;">
+          <div class="form-group" style="flex: 1;">
+            <label for="reg-age" class="form-label">Age</label>
+            <input type="number" id="reg-age" name="age" class="form-input" placeholder="Age" min="1" max="120" value="30" required>
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label for="reg-gender" class="form-label">Gender</label>
+            <select id="reg-gender" name="gender" class="form-input" style="height: 42px;">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-purpose" class="form-label">Purpose of Checkup</label>
+          <select id="reg-purpose" name="purpose" class="form-input" style="height: 42px;">
+            <option value="Routine Check">Routine Cardiac Checkup</option>
+            <option value="SpO2 Monitoring">SpO₂ Diagnostic Track</option>
+            <option value="Post-Op Recovery">Post-Operative Evaluation</option>
+            <option value="Cardiac Baseline">Cardiac Baseline Learn</option>
+            <option value="Hypertension Track">Hypertension Screening</option>
+            <option value="Other">Other...</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="reg-purpose-other-group" style="display: none; margin-top: -5px;">
+          <label for="reg-purpose-other" class="form-label">What was the other?</label>
+          <input type="text" id="reg-purpose-other" name="purpose_other" class="form-input" placeholder="Specify your checkup purpose">
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-full btn-lg" style="margin-top: 10px; background: linear-gradient(135deg, #f97316, #ea580c); border: none; height: 46px; border-radius: 99px; font-weight: 700; font-size: 14.5px; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.2);">
+          📝 Register &amp; Create Log
+        </button>
+      </form>
+    </div>
+
+    <!-- ── DOCTOR ACCESS PORTAL ── -->
+    <div id="portal-doctor" class="portal-pane" style="display: none;">
+      <h2 style="font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 800; text-align: left; margin: 0; color: var(--text);">
+        Physician console
+      </h2>
+      <p style="font-size: 13.5px; color: var(--text-2); text-align: left; margin-top: -8px; margin-bottom: 15px;">
+        Strataform Hospital Internal Network.
+      </p>
+
+      <div style="background: rgba(59, 130, 246, 0.05); padding: 12px 16px; border-radius: 14px; font-size: 12.5px; font-weight: 600; color: var(--blue); text-align: left; border: 1px dashed rgba(59, 130, 246, 0.25); margin-bottom: 22px; line-height: 1.45;">
+        🔒 Authorized Access Restricted to:<br/>
+        <b>Dr. K. Albert</b> &amp; <b>Dr. D. Suganya</b>
+      </div>
+
+      <form action="/login" method="POST" style="display: flex; flex-direction: column; gap: 18px;">
+        <div class="form-group">
+          <label for="doc-username" class="form-label">Physician Username</label>
+          <input type="text" id="doc-username" name="username" class="form-input" placeholder="Dr. K. Albert" required autocomplete="username">
+        </div>
+        
+        <div class="form-group">
+          <label for="doc-password" class="form-label">Security Key</label>
+          <input type="password" id="doc-password" name="password" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-full btn-lg" style="margin-top: 10px; background: linear-gradient(135deg, #f97316, #ea580c); border: none; height: 46px; border-radius: 99px; font-weight: 700; font-size: 14.5px; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.2);">
+          🔑 Physician Sign In
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Dark mode support for login container */
+  [data-theme="dark"] .auth-container {
+    background: rgba(15, 23, 42, 0.65) !important;
+    border-color: rgba(51, 65, 85, 0.5) !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3) !important;
+  }
+  [data-theme="dark"] .patient-sub-tabs {
+    background: rgba(30, 41, 59, 0.6) !important;
+    border-color: rgba(51, 65, 85, 0.4) !important;
+  }
+  [data-theme="dark"] .sub-tab.active {
+    background: #0f172a !important;
+    color: var(--text) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+  }
+
+  .portal-tab.active {
+    border-bottom: 2px solid var(--blue) !important;
+    color: var(--blue) !important;
+  }
+  .sub-tab.active {
+    background: white;
+    color: var(--text) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  /* Input fields glow focus styling, similar to Gemini prompt inputs */
+  .form-input {
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 12px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.6);
+    font-size: 13.5px;
+    transition: var(--transition);
+    color: var(--text);
+  }
+  [data-theme="dark"] .form-input {
+    border-color: rgba(51, 65, 85, 0.5);
+    background: rgba(15, 23, 42, 0.4);
+  }
+  .form-input:focus {
+    border-color: var(--blue) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12) !important;
+    background: var(--bg-2) !important;
+    outline: none;
+  }
+
+  /* Glowing background orbs style */
+  .gemini-glow-orb {
+    position: absolute;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    filter: blur(130px);
+    opacity: 0.25;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .gemini-glow-1 {
+    top: 10%;
+    left: 15%;
+    background: radial-gradient(circle, #3b82f6, transparent);
+  }
+  .gemini-glow-2 {
+    bottom: 15%;
+    right: 15%;
+    background: radial-gradient(circle, #a855f7, transparent);
+  }
+  
+  [data-theme="dark"] .gemini-glow-orb {
+    opacity: 0.15;
+  }
+</style>
+
+<script>
+  function switchPortal(portal) {
+    document.querySelectorAll('.portal-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.portal-pane').forEach(p => p.style.display = 'none');
+    
+    if (portal === 'patient') {
+      document.getElementById('tab-patient').classList.add('active');
+      document.getElementById('portal-patient').style.display = 'block';
+    } else {
+      document.getElementById('tab-doctor').classList.add('active');
+      document.getElementById('portal-doctor').style.display = 'block';
+    }
+  }
+
+  function switchPatientAction(action) {
+    document.querySelectorAll('.patient-sub-tabs .sub-tab').forEach(t => {
+      t.classList.remove('active');
+      t.style.background = 'transparent';
+      t.style.color = 'var(--text-2)';
+    });
+    
+    document.getElementById('form-patient-signin').style.display = 'none';
+    document.getElementById('form-patient-signup').style.display = 'none';
+    
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const activeBg = isDark ? '#0f172a' : 'white';
+
+    if (action === 'signin') {
+      const btn = document.getElementById('subtab-signin');
+      btn.classList.add('active');
+      btn.style.background = activeBg;
+      btn.style.color = 'var(--text)';
+      document.getElementById('form-patient-signin').style.display = 'flex';
+    } else {
+      const btn = document.getElementById('subtab-signup');
+      btn.classList.add('active');
+      btn.style.background = activeBg;
+      btn.style.color = 'var(--text)';
+      document.getElementById('form-patient-signup').style.display = 'flex';
+    }
+  }
+
+  // Preserve tabs state if error occurs
+  {% if register_error %}
+    switchPatientAction('signup');
+  {% endif %}
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const portal = urlParams.get('portal') || urlParams.get('role');
+    if (portal === 'doctor') {
+      switchPortal('doctor');
+    }
+
+    // Toggle "Other" purpose field
+    const purposeSelect = document.getElementById("reg-purpose");
+    const otherGroup = document.getElementById("reg-purpose-other-group");
+    const otherInput = document.getElementById("reg-purpose-other");
+    if (purposeSelect && otherGroup && otherInput) {
+      purposeSelect.addEventListener("change", () => {
+        if (purposeSelect.value === "Other") {
+          otherGroup.style.display = "block";
+          otherInput.setAttribute("required", "true");
+          otherInput.focus();
+        } else {
+          otherGroup.style.display = "none";
+          otherInput.removeAttribute("required");
+        }
+      });
+    }
+
+    // Rewrite form submit logic for "Other" purpose option
+    const signupForm = document.getElementById("form-patient-signup");
+    if (signupForm && purposeSelect && otherInput) {
+      signupForm.addEventListener("submit", (e) => {
+        if (purposeSelect.value === "Other") {
+          const specVal = otherInput.value.trim();
+          if (!specVal) {
+            e.preventDefault();
+            alert("Please specify your purpose of checkup.");
+            return;
+          }
+          // Set option value to the custom input text
+          const activeOpt = purposeSelect.options[purposeSelect.selectedIndex];
+          activeOpt.value = specVal;
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

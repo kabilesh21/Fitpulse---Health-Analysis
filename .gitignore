@@ -1,0 +1,32 @@
+# Python virtual environment
+backend/venv/
+venv/
+ENV/
+env/
+
+# SQLite databases
+backend/fitpulse.db
+*.db
+*.sqlite3
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs and debugs
+*.log
+logs/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp

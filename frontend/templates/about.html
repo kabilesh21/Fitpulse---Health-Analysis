@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header" style="position: relative; overflow: hidden;">
+  <!-- Floating background toys specific to about page -->
+  <div class="toy-container">
+    <div class="toy toy-doctor" style="top: 15%; left: 8%; font-size: 32px; animation: float-toy 6s ease-in-out infinite alternate;">🧑‍⚕️</div>
+    <div class="toy toy-nurse" style="bottom: 20%; right: 8%; font-size: 32px; animation: float-toy 5s ease-in-out infinite alternate-reverse;">👩‍⚕️</div>
+    <div class="toy toy-ambulance" style="bottom: 10%; left: 20%; font-size: 36px; animation: drive-toy 12s linear infinite;">🚑</div>
+  </div>
+  
+  <div class="container">
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-title">About Strataform Care 🧑‍⚕️</h1>
+        <p class="page-sub">Meet the virtual clinical team managing your cardiovascular assessments and vitals diagnostics.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container" style="padding-top: 4rem; padding-bottom: 6rem;">
+  
+  <!-- Row 1: Care Team Grid -->
+  <h2 style="font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 24px; text-align: center;">🧑‍⚕️ Virtual Care Team Division</h2>
+  <div class="features-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2.5rem; margin-bottom: 5rem;">
+    <!-- Dr. K. Albert -->
+    <div class="feature-card team-card" id="team-doctor" style="text-align: center; cursor: pointer; transition: transform 0.3s ease;">
+      <div style="font-size: 64px; margin-bottom: 16px;">🧑‍⚕️</div>
+      <h3 style="font-size: 19px; font-weight: 800; margin-bottom: 6px;">Dr. K. Albert, MD, FACC</h3>
+      <span style="font-size: 12px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 12px;">Chief Cardiologist</span>
+      <p style="font-size: 14px; color: var(--text-2); line-height: 1.5;">
+        Specializes in mathematical cardiology diagnostics, unsupervised machine learning outliers, and diagnostic report release signatures.
+      </p>
+    </div>
+
+    <!-- Dr. D. Suganya -->
+    <div class="feature-card team-card" id="team-nurse" style="text-align: center; cursor: pointer; transition: transform 0.3s ease;">
+      <div style="font-size: 64px; margin-bottom: 16px;">👩‍⚕️</div>
+      <h3 style="font-size: 19px; font-weight: 800; margin-bottom: 6px;">Dr. D. Suganya, Ph.D.</h3>
+      <span style="font-size: 12px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 12px;">Lead Medical Analyst</span>
+      <p style="font-size: 14px; color: var(--text-2); line-height: 1.5;">
+        Directs the patient admissions desk, cleans file columns, handles data imputation logs, and oversees daily patient water checklist counts.
+      </p>
+    </div>
+  </div>
+
+  <!-- Row 2: Ward Admission Prep Checklist (Interactive Widget) -->
+  <div class="charts-row charts-row-2">
+    <!-- Checklist card -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3>📋 Interactive Ward Admission Checklist</h3>
+      </div>
+      <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 15px;">
+        <p style="font-size: 14px; color: var(--text-2);">Tick off items below to prepare the patient file for the anomaly diagnostics pipeline.</p>
+        
+        <div style="display: flex; flex-direction: column; gap: 12px; background: var(--bg-3); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border);">
+          <div style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;" class="admission-item" data-index="0">
+            <span class="admission-checkbox" style="font-size: 20px;">⬜</span>
+            <span style="font-size: 14.5px; font-weight: 600;">Format CSV/Excel wearables logs correctly</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;" class="admission-item" data-index="1">
+            <span class="admission-checkbox" style="font-size: 20px;">⬜</span>
+            <span style="font-size: 14.5px; font-weight: 600;">Calibrate Heart Rate telemetry boundary metrics</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;" class="admission-item" data-index="2">
+            <span class="admission-checkbox" style="font-size: 20px;">⬜</span>
+            <span style="font-size: 14.5px; font-weight: 600;">Set up active Patient Hydration target checklist</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;" class="admission-item" data-index="3">
+            <span class="admission-checkbox" style="font-size: 20px;">⬜</span>
+            <span style="font-size: 14.5px; font-weight: 600;">Review physician credentials & signature releases</span>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px;">
+          <span id="admission-progress-label">Prep Progress: 0 / 4 Items (0%)</span>
+          <button id="btn-admission-reset" class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;">Reset checklist</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ward info card -->
+    <div class="chart-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div class="chart-header">
+          <h3>🏢 Diagnostic Ward Guidelines</h3>
+        </div>
+        <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 12px; font-size: 14px; line-height: 1.6; color: var(--text-2);">
+          <p>📍 <b>Office Address:</b> Cardiovascular Diagnostics Ward 4B, Hospital Center Plaza.</p>
+          <p>🩺 <b>Admissions Procedure:</b> Wearable device logs must contain columns corresponding to <b>HeartRate</b> and <b>Steps</b>. Synonyms are automatically cleaned and aligned by our intake lead, Nurse Joy.</p>
+          <p>🔒 <b>Patient Security:</b> FitsPulse processes files strictly in local memory and web context. No medical data is ever persisted to remote databases, protecting privacy.</p>
+        </div>
+      </div>
+      <div style="margin-top: 20px;">
+        <a href="/upload" class="btn btn-primary" style="width: 100%; text-align: center; display: block; padding: 12px;">💉 Head to Admission Desk</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

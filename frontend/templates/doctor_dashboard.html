@@ -1,0 +1,519 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-title">Strataform Clinical Console 🩺</h1>
+        <p class="page-sub">Internal Patient Diagnostics database and log manager for supervising physicians.</p>
+      </div>
+      <div style="background: rgba(2, 132, 199, 0.08); padding: 8px 16px; border-radius: 12px; border: 1px solid rgba(2, 132, 199, 0.15); display: flex; align-items: center; gap: 8px;">
+        <span class="patient-active-dot"></span>
+        <span style="font-weight: 700; font-size: 13px; color: var(--blue);">Dr. {{ session.username }} Workspace</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container" style="padding-top: 2rem; padding-bottom: 5rem;">
+  
+  <!-- Clinical KPI Row -->
+  <div class="kpi-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px;">
+    
+    <div class="kpi-card" style="background: var(--bg-2); border: 1px solid var(--border); padding: 1.5rem; border-radius: var(--radius); box-shadow: var(--shadow);">
+      <span class="kpi-icon" style="font-size: 24px;">👥</span>
+      <h3 style="font-size: 13px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 8px;">Total Patient Database</h3>
+      <div id="kpi-total-patients" style="font-family: 'Outfit', sans-serif; font-size: 32px; font-weight: 800; color: var(--text); line-height: 1.2; margin-top: 4px;">0</div>
+      <p style="font-size: 11px; color: var(--text-2); margin-top: 4px;">Registered patient profiles</p>
+    </div>
+
+    <div class="kpi-card" style="background: var(--bg-2); border: 1px solid var(--border); padding: 1.5rem; border-radius: var(--radius); box-shadow: var(--shadow);">
+      <span class="kpi-icon" style="font-size: 24px;">📊</span>
+      <h3 style="font-size: 13px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 8px;">Clinical Uploads</h3>
+      <div id="kpi-total-records" style="font-family: 'Outfit', sans-serif; font-size: 32px; font-weight: 800; color: var(--text); line-height: 1.2; margin-top: 4px;">0</div>
+      <p style="font-size: 11px; color: var(--text-2); margin-top: 4px;">Processed vital sign rows</p>
+    </div>
+
+    <div class="kpi-card" style="background: var(--bg-2); border: 1px solid var(--border); padding: 1.5rem; border-radius: var(--radius); box-shadow: var(--shadow);">
+      <span class="kpi-icon" style="font-size: 24px;">🏥</span>
+      <h3 style="font-size: 13px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 8px;">Clinic Facility Status</h3>
+      <div style="font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 800; color: #10b981; line-height: 1.2; margin-top: 12px;">Active Mainframe</div>
+      <p style="font-size: 11px; color: var(--text-2); margin-top: 4px;">Secure Strataform connection</p>
+    </div>
+
+  </div>
+
+  <!-- Purpose & User Access Analytics Card -->
+  <div style="background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; box-shadow: var(--shadow); margin-bottom: 30px;">
+    <h2 style="font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 5px; color: var(--text);">📊 Patient Access & Purpose Analytics</h2>
+    <p style="font-size: 13.5px; color: var(--text-2); margin-bottom: 20px;">Aggregated metrics showing patient log purposes and active diagnostics enrollments.</p>
+    
+    <div id="analytics-loader" style="text-align: center; padding: 1rem; color: var(--text-2);">🧬 Loading analytics...</div>
+    
+    <div id="analytics-content" style="display: none; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+      <!-- Total registered card -->
+      <div style="background: var(--bg-3); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--border);">
+        <h4 style="margin: 0 0 10px 0; font-size: 14px; font-weight: 700; color: var(--text);">Patient Access Registry</h4>
+        <div style="font-size: 32px; font-weight: 800; color: var(--blue);" id="analytics-total-count">0</div>
+        <div style="font-size: 12.5px; color: var(--text-2); margin-top: 4px;">Total registered patients in the database</div>
+      </div>
+      
+      <!-- Purpose breakdown list card -->
+      <div style="background: var(--bg-3); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--border); flex: 1.5;">
+        <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 700; color: var(--text);">Enrollment Purpose Breakdown</h4>
+        <div id="analytics-purpose-list" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab switcher for Doctor Portal sections -->
+  <div class="tabs-header" style="margin-bottom: 1.5rem; display: flex; gap: 10px;">
+    <button class="tab-btn active" id="tab-btn-patients" onclick="switchDoctorTab('patients')" style="padding: 10px 16px; border-radius: 99px; border: 1px solid var(--border); font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 13.5px; background: var(--bg-3); color: var(--text); cursor: pointer; transition: var(--transition);">
+      📋 Registered Clinical Patients
+    </button>
+    <button class="tab-btn" id="tab-btn-logins" onclick="switchDoctorTab('logins')" style="padding: 10px 16px; border-radius: 99px; border: 1px solid var(--border); font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 13.5px; background: transparent; color: var(--text-2); cursor: pointer; transition: var(--transition);">
+      🔑 Access History Reports
+    </button>
+  </div>
+
+  <!-- Pane 1: Patient Grid -->
+  <div id="pane-patients" class="tab-pane active" style="background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; box-shadow: var(--shadow); display: block;">
+    <h2 style="font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 20px; color: var(--text);">📋 Registered Clinical Patients</h2>
+    
+    <div id="loading-patients" style="text-align: center; padding: 2rem; color: var(--text-2);">
+      🧬 Fetching clinical databases...
+    </div>
+
+    <div id="patient-list" class="patient-grid" style="display: none;">
+      <!-- Populated via Javascript -->
+    </div>
+  </div>
+
+  <!-- Pane 2: Access History Reports -->
+  <div id="pane-logins" class="tab-pane" style="display: none; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; box-shadow: var(--shadow);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+      <div>
+        <h2 style="font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 700; color: var(--text); margin: 0;">🔑 Portal Access History</h2>
+        <p style="font-size: 13px; color: var(--text-2); margin-top: 4px; margin-bottom: 0;">Audit trails for user accounts authenticated today and yesterday.</p>
+      </div>
+      <button onclick="printLoginReport()" class="btn btn-primary" style="background: var(--purple); border: none; font-size: 13px; padding: 8px 16px; border-radius: 99px; font-weight: 700; cursor: pointer;">
+        🖨️ Generate Access Report
+      </button>
+    </div>
+
+    <div style="background: var(--bg-3); padding: 1.5rem; border-radius: 16px; border: 1px solid var(--border);" id="login-history-container">
+      <h4 style="margin: 0 0 15px 0; font-size: 14.5px; font-weight: 700; color: var(--text); border-bottom: 1.5px solid var(--border); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+        <span>📋 Clinical Login Records</span>
+        <span style="color: var(--blue); font-weight: 800; background: rgba(2, 132, 199, 0.08); padding: 2px 12px; border-radius: 99px; font-size: 12px;" id="count-total-logins">0</span>
+      </h4>
+      <div id="list-all-logins" style="display: flex; flex-direction: column; gap: 10px;">
+        <!-- Dynamically populated grouped by date -->
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal Dialog for uploading files specifically for a patient -->
+<div id="doc-patient-modal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; padding: 20px;">
+  <div class="modal-content" style="background: var(--bg-2); border: 1px solid var(--border); padding: 2rem; border-radius: var(--radius); max-width: 500px; width: 100%; position: relative; box-shadow: var(--shadow-md);">
+    <span class="close-modal" onclick="closeDocModal()" style="position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: var(--text-2); font-weight: bold;">&times;</span>
+    <h3 style="font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 5px;" id="modal-patient-name">Manage Logs for Patient</h3>
+    <p style="font-size: 13px; color: var(--text-2); margin-bottom: 20px;">Add vitals or upload files to this patient record database.</p>
+    
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+      <a id="modal-btn-upload" href="#" class="btn btn-primary btn-lg btn-full" style="text-align: center;">📂 Open Admission Desk for Patient</a>
+      <button id="modal-btn-report" class="btn btn-outline btn-lg btn-full" style="text-align: center; border-color: var(--blue); color: var(--blue);">📝 Generate &amp; Download PDF Report</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetchPatients();
+  });
+
+  function fetchPatients() {
+    fetch("/api/patients")
+      .then(res => {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(data => {
+        if (data.error) throw new Error(data.error);
+        
+        document.getElementById("loading-patients").style.display = "none";
+        const grid = document.getElementById("patient-list");
+        grid.innerHTML = "";
+        grid.style.display = "grid";
+        
+        let totalRecords = 0;
+        document.getElementById("kpi-total-patients").textContent = data.length;
+
+        // Aggregate analytics data
+        document.getElementById("analytics-loader").style.display = "none";
+        document.getElementById("analytics-content").style.display = "grid";
+        document.getElementById("analytics-total-count").textContent = data.length;
+        
+        const purposeCounts = {};
+        data.forEach(p => {
+          const purp = p.purpose || "Routine Check";
+          purposeCounts[purp] = (purposeCounts[purp] || 0) + 1;
+        });
+        
+        const purpList = document.getElementById("analytics-purpose-list");
+        purpList.innerHTML = "";
+        
+        if (Object.keys(purposeCounts).length === 0) {
+          purpList.innerHTML = '<span style="font-size:13px;color:var(--text-2);">No enrollment data yet.</span>';
+        } else {
+          Object.keys(purposeCounts).forEach(purp => {
+            const item = document.createElement("div");
+            item.style.cssText = "display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:var(--bg);border-radius:8px;border:1px solid var(--border);font-size:13px;";
+            const label = document.createElement("span");
+            label.style.cssText = "font-weight:600;color:var(--text-2);";
+            label.textContent = purp;
+            const badge = document.createElement("span");
+            badge.style.cssText = "font-weight:800;color:var(--blue);background:rgba(59,130,246,0.08);padding:2px 8px;border-radius:99px;";
+            badge.textContent = purposeCounts[purp] + " patients";
+            item.appendChild(label);
+            item.appendChild(badge);
+            purpList.appendChild(item);
+          });
+        }
+
+        if (data.length === 0) {
+          grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--text-2);">No registered patient profiles found.</div>';
+          return;
+        }
+
+        data.forEach(p => {
+          totalRecords += p.records_count;
+          
+          const card = document.createElement("div");
+          card.className = "patient-card";
+          card.innerHTML = `
+            <div class="patient-card-header">
+              <div>
+                <span class="patient-name">👤 ${p.username}</span>
+                <div class="patient-meta-pills">
+                  <span class="patient-pill">${p.age} years old</span>
+                  <span class="patient-pill">${p.gender}</span>
+                  <span class="patient-pill patient-purpose-badge">🎯 Purpose: ${p.purpose}</span>
+                </div>
+              </div>
+              <span class="patient-pill" style="background: var(--bg-3); color: var(--text); font-weight: bold;">
+                ${p.records_count} logs
+              </span>
+            </div>
+            
+            <div style="font-size: 12.5px; color: var(--text-2); margin-top: 4px;">
+              <b>Latest Evaluation:</b> <span class="risk-level-${p.latest_risk.toLowerCase()}" style="font-weight: 700;">${p.latest_risk} Risk</span>
+              ${p.latest_time ? `<br/><small>Last log: ${p.latest_time}</small>` : ''}
+            </div>
+
+            <div class="patient-card-actions" style="margin-top: 10px; display: flex; gap: 8px;">
+              <button class="btn btn-outline" style="flex: 1; font-size: 11.5px; padding: 6px 8px;" onclick="openDocModal(${p.id}, '${p.username}')">📂 Logs</button>
+              <a href="/dashboard?patient_id=${p.id}" target="_blank" class="btn btn-primary" style="flex: 1.2; font-size: 11.5px; padding: 6px 8px; text-align: center; background: var(--blue);">📊 Dashboard</a>
+              <a href="/report?patient_id=${p.id}" target="_blank" class="btn btn-outline" style="flex: 1.2; font-size: 11.5px; padding: 6px 8px; text-align: center; border-color: var(--purple); color: var(--purple);">📝 Report</a>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+
+        document.getElementById("kpi-total-records").textContent = totalRecords;
+      })
+      .catch(err => {
+        const loader = document.getElementById("loading-patients");
+        loader.style.display = "block";
+        loader.style.color = "var(--red)";
+        loader.textContent = "\u274C Failed to load patient profiles. Ensure you are logged in as a Doctor.";
+        document.getElementById("analytics-loader").textContent = "\u274C Analytics unavailable.";
+        console.error(err);
+      });
+  }
+
+  let selectedPatientId = null;
+
+  function openDocModal(id, name) {
+    selectedPatientId = id;
+    document.getElementById("modal-patient-name").textContent = `Manage Logs for: ${name}`;
+    document.getElementById("modal-btn-upload").setAttribute("href", `/upload?patient_id=${id}`);
+    
+    // Wire up report generator button
+    document.getElementById("modal-btn-report").onclick = () => {
+      // Fetch session check for patient to compile newest cache session id
+      fetch(`/api/session_check?patient_id=${id}`)
+        .then(res => res.json())
+        .then(resData => {
+          if (resData.logged_in && resData.has_data) {
+            window.open(`/api/report/${resData.session_id}/pdf?patient_id=${id}`, '_blank');
+          } else {
+            alert("No vital records found for this patient to generate a PDF report!");
+          }
+        })
+        .catch(err => console.error(err));
+    };
+
+    document.getElementById("doc-patient-modal").style.display = "flex";
+  }
+
+  function closeDocModal() {
+    document.getElementById("doc-patient-modal").style.display = "none";
+  }
+
+  let loginHistoryInterval = null;
+
+  function switchDoctorTab(tab) {
+    if (loginHistoryInterval) {
+      clearInterval(loginHistoryInterval);
+      loginHistoryInterval = null;
+    }
+
+    document.querySelectorAll('.tab-pane').forEach(el => {
+      el.style.display = 'none';
+      el.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-btn').forEach(el => {
+      el.classList.remove('active');
+      el.style.background = 'transparent';
+      el.style.color = 'var(--text-2)';
+    });
+
+    if (tab === 'patients') {
+      const pane = document.getElementById('pane-patients');
+      pane.style.display = 'block';
+      pane.classList.add('active');
+      const btn = document.getElementById('tab-btn-patients');
+      btn.classList.add('active');
+      btn.style.background = 'var(--bg-3)';
+      btn.style.color = 'var(--text)';
+    } else {
+      const pane = document.getElementById('pane-logins');
+      pane.style.display = 'block';
+      pane.classList.add('active');
+      const btn = document.getElementById('tab-btn-logins');
+      btn.classList.add('active');
+      btn.style.background = 'var(--bg-3)';
+      btn.style.color = 'var(--text)';
+      fetchLoginHistory();
+      // Auto-refresh login history every 5 seconds for real-time tracking
+      loginHistoryInterval = setInterval(fetchLoginHistory, 5000);
+    }
+  }
+  
+  function fetchLoginHistory() {
+    fetch('/api/login_history')
+      .then(res => res.json())
+      .then(data => {
+        const logins = data.logins || [];
+        document.getElementById('count-total-logins').textContent = logins.length;
+        
+        const listContainer = document.getElementById('list-all-logins');
+        listContainer.innerHTML = '';
+        
+        if (logins.length === 0) {
+          listContainer.innerHTML = `<div style="font-size: 13px; color: var(--text-2); text-align: center; padding: 2rem; background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px;">No login activities recorded yet.</div>`;
+          return;
+        }
+        
+        // Group by Date
+        const grouped = {};
+        logins.forEach(r => {
+          const dateStr = r.login_time.split(' ')[0] || r.login_time;
+          if (!grouped[dateStr]) grouped[dateStr] = [];
+          grouped[dateStr].push(r);
+        });
+        
+        // Sort dates descending
+        const sortedDates = Object.keys(grouped).sort().reverse();
+        
+        sortedDates.forEach(date => {
+          let displayDate = date;
+          try {
+            const parsedDate = new Date(date);
+            if (!isNaN(parsedDate)) {
+              displayDate = parsedDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            }
+          } catch(e) {}
+          
+          const dateHeader = document.createElement('div');
+          dateHeader.style.cssText = "font-size: 13px; font-weight: 800; color: var(--blue); background: rgba(2, 132, 199, 0.06); padding: 6px 12px; border-radius: 8px; margin-top: 10px; text-transform: uppercase; letter-spacing: 0.5px; border-left: 3px solid var(--blue);";
+          dateHeader.textContent = displayDate;
+          listContainer.appendChild(dateHeader);
+          
+          const dateList = document.createElement('ul');
+          dateList.style.cssText = "list-style: none; display: flex; flex-direction: column; gap: 8px; padding: 0; margin: 5px 0 15px 0;";
+          
+          grouped[date].forEach(r => {
+            const timeOnly = r.login_time.split(' ')[1] || r.login_time;
+            dateList.appendChild(createLoginListItem(r, timeOnly));
+          });
+          
+          listContainer.appendChild(dateList);
+        });
+      })
+      .catch(err => console.error(err));
+  }
+  
+  function createLoginListItem(item, timeStr) {
+    const li = document.createElement('li');
+    li.style.display = 'flex';
+    li.style.justifyContent = 'space-between';
+    li.style.alignItems = 'center';
+    li.style.padding = '10px 14px';
+    li.style.background = 'var(--bg-2)';
+    li.style.border = '1px solid var(--border)';
+    li.style.borderRadius = '12px';
+    li.style.fontSize = '13px';
+    li.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.02)';
+    
+    li.innerHTML = `
+      <div style="text-align: left;">
+        <span style="font-weight: 700; color: var(--text); font-family: 'Outfit', sans-serif;">👤 ${item.username}</span>
+        <div style="font-size: 11.5px; color: var(--text-2); margin-top: 3px;">
+          <b>Purpose:</b> ${item.purpose} <br/>
+          <small>${item.age} yrs old • ${item.gender}</small>
+        </div>
+      </div>
+      <span style="font-family: monospace; font-size: 11px; font-weight: 700; background: rgba(59, 130, 246, 0.08); color: var(--blue); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border);">${timeStr}</span>
+    `;
+    return li;
+  }
+
+  function buildTableRows(rows, color) {
+    if (rows.length === 0) {
+      return '<tr><td colspan="5" style="text-align:center;color:#64748b;padding:20px;">No login activities recorded.</td></tr>';
+    }
+    return rows.map(function(r, i) {
+      return [
+        '<tr style="background:' + (i % 2 === 0 ? '#ffffff' : '#f8fafc') + '">',
+        '<td style="font-family:monospace;font-size:11px;font-weight:700;color:' + color + ';">' + r.login_time + '</td>',
+        '<td><b>' + r.username + '</b></td>',
+        '<td>' + (r.purpose || 'Routine Check') + '</td>',
+        '<td>' + (r.age || '—') + ' yrs</td>',
+        '<td>' + (r.gender || '—') + '</td>',
+        '</tr>'
+      ].join('');
+    }).join('');
+  }
+
+  function printLoginReport() {
+    fetch('/api/login_history')
+      .then(function(res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function(data) {
+        if (data.error) throw new Error(data.error);
+
+        var now = new Date().toLocaleString();
+        var allLogins = data.logins || [];
+
+        // Purpose stats
+        var purposeCount = {};
+        allLogins.forEach(function(r) {
+          var p = r.purpose || 'Routine Check';
+          purposeCount[p] = (purposeCount[p] || 0) + 1;
+        });
+        var purposeRows = Object.keys(purposeCount).map(function(p) {
+          return '<tr><td>' + p + '</td><td style="font-weight:700;color:#0d9488;">' + purposeCount[p] + '</td></tr>';
+        }).join('');
+
+        // Gender stats
+        var genderCount = {};
+        allLogins.forEach(function(r) {
+          var g = r.gender || 'Unknown';
+          genderCount[g] = (genderCount[g] || 0) + 1;
+        });
+        var genderRows = Object.keys(genderCount).map(function(g) {
+          return '<tr><td>' + g + '</td><td style="font-weight:700;color:#7c3aed;">' + genderCount[g] + '</td></tr>';
+        }).join('');
+
+        var allRows = buildTableRows(allLogins, '#0d9488');
+
+        var parts = [
+          '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Strataform Login Audit Report</title>',
+          '<style>',
+          '@page { size: A4; margin: 18mm 15mm; }',
+          'body{font-family:Arial,Helvetica,sans-serif;color:#1e293b;margin:0;padding:32px;line-height:1.5;font-size:12px;background:#fff}',
+          '.letterhead{border-bottom:3px solid #0d9488;padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end}',
+          '.hosp-name{font-size:22px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;margin:0}',
+          '.hosp-sub{font-size:11px;color:#64748b;margin:4px 0 0}',
+          '.reg-badge{font-size:10px;color:#94a3b8;text-align:right;line-height:1.6}',
+          'h2{font-size:14px;font-weight:700;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin:24px 0 12px;color:#0f172a;text-transform:uppercase;letter-spacing:.5px}',
+          '.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}',
+          '.sum-card{background:#f1f5f9;border-radius:8px;padding:12px;text-align:center;border:1px solid #e2e8f0}',
+          '.sum-num{font-size:22px;font-weight:900;color:#0d9488}',
+          '.sum-label{font-size:10px;color:#64748b;text-transform:uppercase;margin-top:2px;letter-spacing:.5px}',
+          '.breakdown-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}',
+          'table{width:100%;border-collapse:collapse;font-size:11px}',
+          'th{background:#0d9488;color:#fff;padding:8px 10px;text-align:left;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.5px}',
+          'td{padding:7px 10px;border-bottom:1px solid #e2e8f0}',
+          '.footer{text-align:center;font-size:10px;color:#94a3b8;margin-top:40px;border-top:1px solid #e2e8f0;padding-top:14px}',
+          '.stamp{background:#dcfce7;color:#16a34a;padding:2px 8px;border-radius:4px;font-weight:700;font-size:10px}',
+          '</style></head><body>',
+          '<div class="letterhead">',
+          '<div style="display:flex; align-items:center; gap:12px;">',
+          '<img src="' + window.location.origin + '/static/img/logo.jpg" style="width:48px;height:48px;border-radius:8px;object-fit:cover;" alt="Logo" />',
+          '<div>',
+          '<div class="hosp-name">STRATAFORM CLINICAL LABS</div>',
+          '<div class="hosp-sub">Strataform Medical Center | 12/32 Nethaji Street, Kodambakkam, 600 024</div>',
+          '<div class="hosp-sub">diagnostics@strataform.med | 📞 044 2454 2454 | Reg. No: SCL-2024-MCI-00812</div>',
+          '</div></div>',
+          '<div class="reg-badge">',
+          '<div><b>Portal Access Audit Report</b></div>',
+          '<div>Generated: ' + now + '</div>',
+          '<div><span class="stamp">PHYSICIAN ONLY</span></div>',
+          '</div></div>',
+          '<h2>Summary Dashboard - Login Statistics</h2>',
+          '<div class="summary-grid" style="grid-template-columns: repeat(2, 1fr);">',
+          '<div class="sum-card"><div class="sum-num">' + allLogins.length + '</div><div class="sum-label">Total Logins</div></div>',
+          '<div class="sum-card"><div class="sum-num" style="color:#7c3aed;">' + Object.keys(purposeCount).length + '</div><div class="sum-label">Unique Purposes</div></div>',
+          '</div>',
+          '<div class="breakdown-grid">',
+          '<div>',
+          '<h2 style="margin-top:0">Enrollment Purpose Breakdown</h2>',
+          '<table><thead><tr><th>Purpose / Specialty</th><th>Count</th></tr></thead><tbody>' + (purposeRows || '<tr><td colspan="2">No data</td></tr>') + '</tbody></table>',
+          '</div>',
+          '<div>',
+          '<h2 style="margin-top:0">Demographics - Gender Distribution</h2>',
+          '<table><thead><tr><th>Gender</th><th>Count</th></tr></thead><tbody>' + (genderRows || '<tr><td colspan="2">No data</td></tr>') + '</tbody></table>',
+          '</div>',
+          '</div>',
+          '<h2>Portal Access Log</h2>',
+          '<table><thead><tr><th>Timestamp</th><th>Username</th><th>Purpose / Role</th><th>Age</th><th>Gender</th></tr></thead><tbody>' + allRows + '</tbody></table>',
+          '<div class="footer">',
+          'STRATAFORM CLINICAL LABS - PHYSICIAN ACCESS PORTAL AUDIT | Reg. No: SCL-2024-MCI-00812<br>',
+          'This document is confidential and for internal medical use only. Generated by Strataform Diagnostic Core v2.0',
+          '</div>',
+          '</body></html>'
+        ];
+
+        var html = parts.join('');
+        var blob = new Blob([html], {type: 'text/html'});
+        var url = URL.createObjectURL(blob);
+        
+        // Auto-download the report
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'Strataform_Login_Audit_Report.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        var pw = window.open(url, '_blank', 'width=900,height=750');
+        if (!pw) {
+          console.log('Popup blocked, but report was downloaded.');
+        }
+      })
+      .catch(function(err) {
+        alert('Failed to load login history. Ensure you are logged in with physician privileges.');
+        console.error(err);
+      });
+  }
+</script>
+{% endblock %}

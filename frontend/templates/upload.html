@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-title">Admission Diagnostics Desk 💉</h1>
+        <p class="page-sub">Select your reviewing doctor, then import vital spreadsheets or submit manual entries.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container" style="padding-top: 1.5rem; padding-bottom: 5rem; max-width: 800px;">
+  
+  <!-- Custom patient upload banner (if doctor handles patient logs) -->
+  <div id="doctor-patient-banner" class="info-card hidden" style="background: rgba(2, 132, 199, 0.08); border-color: var(--blue); margin-bottom: 20px;">
+    <span class="info-icon">👤</span>
+    <div>
+      <strong>Internal Doctor Mode:</strong> You are submitting vital records for patient <span id="banner-patient-name" style="color: var(--blue); font-weight: 700;"></span>.
+    </div>
+  </div>
+
+  <!-- Supervising Doctor Selector Grid -->
+  <div class="doctor-selector-section" style="margin-bottom: 30px; background: var(--bg-2); border: 1px solid var(--border); padding: 1.5rem; border-radius: var(--radius); box-shadow: var(--shadow);">
+    <h3 style="font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 12px; color: var(--text); display: flex; align-items: center; gap: 8px;">
+      🩺 Select Reviewing Physician <span style="font-size:11px; font-weight:normal; color:var(--text-2);">(Male / Female Doctor Required)</span>
+    </h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 15px;">
+      
+      <div id="doc-card-albert" class="doc-card active" onclick="selectDoctor('Dr. K. Albert')">
+        <div class="doc-avatar">👨‍⚕️</div>
+        <div class="doc-info">
+          <h4 class="doc-name">Dr. K. Albert, MD, FACC</h4>
+          <p class="doc-specialty">Male Physician • Cardiology &amp; Heart Risk</p>
+        </div>
+      </div>
+      
+      <div id="doc-card-suganya" class="doc-card" onclick="selectDoctor('Dr. D. Suganya')">
+        <div class="doc-avatar">👩‍⚕️</div>
+        <div class="doc-info">
+          <h4 class="doc-name">Dr. D. Suganya, Ph.D.</h4>
+          <p class="doc-specialty">Female Physician • Machine Learning Analyst</p>
+        </div>
+      </div>
+      
+    </div>
+    <input type="hidden" id="selected-doctor-input" name="selected_doctor" value="Dr. K. Albert">
+  </div>
+
+  <!-- Tabs Navigation -->
+  <div class="tabs-header">
+    <button class="tab-btn active" onclick="switchTab(event, 'tab-upload')">📂 Upload CSV / Excel</button>
+    <button class="tab-btn" onclick="switchTab(event, 'tab-manual')">✍️ Manual Vitals Input</button>
+  </div>
+
+  <!-- Tab 1: CSV/Excel Upload -->
+  <div id="tab-upload" class="tab-content active">
+    <div class="info-card">
+      <span class="info-icon">💡</span>
+      <div>
+        <strong>🏥 Columns Checkup:</strong> Your patient file must have columns matching <code>HeartRate</code>, <code>Steps</code>, and <code>Gender</code>. Advanced columns (<code>SpO2</code>, <code>Temperature</code>, <code>SleepDuration</code>, etc.) are auto-loaded if present; otherwise, clinical baselines are filled.
+      </div>
+    </div>
+
+    <!-- Drag and drop zone -->
+    <div class="dropzone" id="dropzone">
+      <div class="dz-icon">🏥</div>
+      <h3 class="dz-title">Drag & Drop patient files here</h3>
+      <p class="dz-sub">Accepts CSV, XLSX or XLS logs (up to 16 MB)</p>
+      <input type="file" id="file-input" class="hidden" accept=".csv, .xlsx, .xls">
+    </div>
+
+    <!-- Selected file preview -->
+    <div id="file-preview-card" class="file-preview hidden">
+      <div class="fp-icon">📄</div>
+      <div class="fp-info">
+        <span id="fp-name" class="fp-name">patient_vitals.csv</span>
+        <span id="fp-size" class="fp-size">12 KB</span>
+      </div>
+      <button id="fp-remove" class="fp-remove" title="Discard file">&times;</button>
+    </div>
+
+    <!-- Progress bar -->
+    <div id="progress-wrapper" class="upload-progress hidden">
+      <div class="up-bar-wrap">
+        <div id="progress-bar" class="up-bar"></div>
+      </div>
+      <div class="up-label">
+        <span>🔬 Analyzing symptoms...</span>
+        <span id="progress-percent">0%</span>
+      </div>
+    </div>
+
+    <!-- Error display box -->
+    <div id="error-alert" class="alert alert-error hidden">
+      <span style="font-weight: 700; margin-right: 6px;">❌ Error:</span>
+      <span id="error-message">Invalid columns.</span>
+    </div>
+
+    <!-- Submit button -->
+    <button id="btn-analyze" class="btn btn-primary btn-lg btn-full hidden" style="margin-top: 15px;">
+      🔬 Run Lab Diagnostics
+    </button>
+  </div>
+
+  <!-- Tab 2: Manual Vitals Input Form -->
+  <div id="tab-manual" class="tab-content">
+    <div class="info-card">
+      <span class="info-icon">📝</span>
+      <div>
+        <strong>🧑‍⚕️ Single Vitals Entry:</strong> Enter patient vital signs below to run real-time anomaly checks and risk calculations.
+      </div>
+    </div>
+
+    <form id="manual-vitals-form" style="background: var(--bg-2); border: 1px solid var(--border); padding: 2rem; border-radius: var(--radius); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 20px;">
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="form-group">
+          <label for="manual-hr" class="form-label">Heart Rate (bpm)</label>
+          <input type="number" id="manual-hr" name="heart_rate" class="form-input" value="72" min="30" max="250" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="manual-spo2" class="form-label">SpO₂ Oxygen Saturation (%)</label>
+          <input type="number" id="manual-spo2" name="spo2" class="form-input" value="98" min="50" max="100" required>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="form-group">
+          <label for="manual-sys" class="form-label">Systolic BP (mmHg)</label>
+          <input type="number" id="manual-sys" name="systolic_bp" class="form-input" value="120" min="60" max="240" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="manual-dia" class="form-label">Diastolic BP (mmHg)</label>
+          <input type="number" id="manual-dia" name="diastolic_bp" class="form-input" value="80" min="40" max="150" required>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="form-group">
+          <label for="manual-temp" class="form-label">Body Temperature (°C)</label>
+          <input type="number" id="manual-temp" name="temperature" class="form-input" value="36.6" step="0.1" min="30" max="45" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="manual-sleep" class="form-label">Sleep Duration (hours)</label>
+          <input type="number" id="manual-sleep" name="sleep_duration" class="form-input" value="8" step="0.5" min="0" max="24" required>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="form-group">
+          <label for="manual-steps" class="form-label">Steps Count</label>
+          <input type="number" id="manual-steps" name="steps" class="form-input" value="5000" min="0" max="100000" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="manual-calories" class="form-label">Calories Burned (kcal)</label>
+          <input type="number" id="manual-calories" name="calories" class="form-input" value="2000" min="0" max="15000" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="manual-stress" class="form-label">Stress Level (1 - 10)</label>
+        <input type="range" id="manual-stress" name="stress_level" min="1" max="10" value="3" style="width: 100%; accent-color: var(--blue);" oninput="this.nextElementSibling.innerText = this.value">
+        <span style="font-weight: 700; color: var(--blue); margin-top: 4px; display: inline-block;">3</span>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg btn-full" style="margin-top: 10px;">
+        🔬 Calculate & Add Vitals
+      </button>
+    </form>
+  </div>
+
+</div>
+
+<script>
+  function switchTab(event, tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    
+    document.getElementById(tabId).classList.add('active');
+    event.currentTarget.classList.add('active');
+  }
+
+  function selectDoctor(docName) {
+    document.getElementById("selected-doctor-input").value = docName;
+    document.querySelectorAll(".doc-card").forEach(c => c.classList.remove("active"));
+    if (docName === "Dr. K. Albert") {
+      document.getElementById("doc-card-albert").classList.add("active");
+    } else {
+      document.getElementById("doc-card-suganya").classList.add("active");
+    }
+  }
+
+  // Handle URL context for Doctor mode
+  const urlParams = new URLSearchParams(window.location.search);
+  const patientId = urlParams.get('patient_id');
+  
+  // Handle manual tab redirect
+  if (urlParams.get('tab') === 'manual') {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-manual').classList.add('active');
+    const manualBtn = document.querySelector('button[onclick*="tab-manual"]');
+    if (manualBtn) manualBtn.classList.add('active');
+  }
+
+  if (patientId) {
+    const banner = document.getElementById("doctor-patient-banner");
+    const bannerName = document.getElementById("banner-patient-name");
+    if (banner && bannerName) {
+      bannerName.textContent = `ID #${patientId}`;
+      banner.classList.remove("hidden");
+    }
+  }
+
+  // Handle Manual Form Submission
+  const manualForm = document.getElementById('manual-vitals-form');
+  if (manualForm) {
+    manualForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const selectedDoc = document.getElementById("selected-doctor-input").value;
+      const formData = {
+        heart_rate: parseFloat(document.getElementById('manual-hr').value),
+        systolic_bp: parseFloat(document.getElementById('manual-sys').value),
+        diastolic_bp: parseFloat(document.getElementById('manual-dia').value),
+        spo2: parseFloat(document.getElementById('manual-spo2').value),
+        temperature: parseFloat(document.getElementById('manual-temp').value),
+        sleep_duration: parseFloat(document.getElementById('manual-sleep').value),
+        steps: parseFloat(document.getElementById('manual-steps').value),
+        calories: parseFloat(document.getElementById('manual-calories').value),
+        stress_level: parseFloat(document.getElementById('manual-stress').value),
+        selected_doctor: selectedDoc
+      };
+
+      if (patientId) {
+        formData.patient_id = patientId;
+      }
+
+      fetch('/api/manual_entry', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          // Store session values to unlock client-side navigation
+          localStorage.setItem("fitpulse-session-id", data.session_id);
+          localStorage.setItem("fitpulse-filename", "Manual Vitals Log");
+          localStorage.setItem("fitpulse-report", JSON.stringify(data.report));
+          localStorage.setItem("fitpulse-records", JSON.stringify(data.records));
+          
+          if (typeof showToast === 'function') {
+            showToast("🩺 Manual vitals log saved and analyzed!", "success");
+          }
+          
+          setTimeout(() => {
+            const redirectUrl = patientId ? `/dashboard?patient_id=${patientId}` : '/dashboard';
+            window.location.href = redirectUrl;
+          }, 800);
+        } else {
+          alert("Error: " + data.error);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Error saving vitals.");
+      });
+    });
+  }
+</script>
+{% endblock %}

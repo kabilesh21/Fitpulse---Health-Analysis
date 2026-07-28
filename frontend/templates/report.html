@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-title">Medical Report 📝</h1>
+        <p class="page-sub" id="report-meta">Clinical assessment report compiled from the patient log analysis.</p>
+      </div>
+      <div id="report-header-actions" class="hidden">
+        <button id="btn-download-pdf" class="btn btn-primary" style="display:flex;align-items:center;gap:8px;">
+          🖨️ Print / Save as PDF
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container" style="padding-top: 3rem; padding-bottom: 5rem;">
+  <div id="no-session-content" class="lock-page-overlay">
+    <div class="lock-shield">🔒🩹</div>
+    <h3>Clinical Certificate Locked 📝</h3>
+    <p>
+      Please upload the CSV or Excel sheet file or enter vital parameters manually at the Admission Desk to calculate anomalies and generate the certified medical report.
+    </p>
+    <a href="/upload" class="btn btn-primary btn-lg">💉 Go to Admission Desk to Initialize 🏥</a>
+  </div>
+
+  <!-- Report content (hidden by default) -->
+  <div id="report-content" class="hidden report-paper" style="background: var(--bg-2); padding: 2.5rem; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-md);">
+    
+    <!-- Strataform Hospital Letterhead Header -->
+    <div class="report-letterhead" style="margin-bottom: 2rem; border-bottom: 2.5px solid var(--blue); padding-bottom: 1rem; display: flex; justify-content: space-between; align-items: flex-start;">
+      <div style="display:flex; align-items:flex-start; gap:14px;">
+        <img src="/static/img/logo.jpg" style="width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid rgba(2,132,199,0.2);" alt="Strataform Logo" />
+        <div>
+          <h1 style="font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 900; color: var(--text); letter-spacing: -0.5px; margin: 0; line-height:1.1;">STRATAFORM CLINICAL LABS</h1>
+          <p style="font-size: 12px; color: var(--text-2); margin: 3px 0 2px 0;">Strataform Medical Center | 12/32 Nethaji Street, Kodambakkam, 600 024</p>
+          <p style="font-size: 11px; color: var(--text-2); margin: 0;">✉ diagnostics@strataform.med &nbsp;|&nbsp; 📞 044 2454 2454 &nbsp;|&nbsp; Reg. No: <b>SCL-2024-MCI-00812</b></p>
+        </div>
+      </div>
+      <div style="text-align: right; font-size: 11.5px; color: var(--text-2); flex-shrink:0; margin-left:12px;">
+        <div style="background:rgba(2,132,199,0.08);border:1px solid rgba(2,132,199,0.2);border-radius:8px;padding:8px 14px;display:inline-block;margin-bottom:6px;">
+          <span style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--text-2);display:block;margin-bottom:2px;">Supervising Physician</span>
+          <span id="rep-doctor-header" style="font-weight: 800; color: var(--blue); font-family:'Outfit',sans-serif; font-size:14px;">Dr. K. Albert</span>
+        </div>
+        <div style="font-size:10.5px;color:var(--text-2);">
+          <span id="rep-print-date"></span>
+        </div>
+        <div style="margin-top:4px;">
+          <span style="background:#dcfce7;color:#16a34a;font-size:9px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:.5px;">NABL ACCREDITED</span>
+          <span style="background:#eff6ff;color:#1d4ed8;font-size:9px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:.5px;margin-left:4px;">ISO 15189</span>
+        </div>
+      </div>
+    </div>
+    <script>
+      var repDateEl = document.getElementById('rep-print-date');
+      if (repDateEl) repDateEl.textContent = 'Report Date: ' + new Date().toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'});
+    </script>
+
+    <!-- Patient Report Insights -->
+    <div id="tab-patient-report" style="display: block;">
+      <!-- Section 1: Stats Summary -->
+      <div class="report-section">
+        <h2 class="rs-title">📊 Clinical Summary Statistics</h2>
+        <div class="stats-grid">
+          <div class="stat-cell">
+            <span class="sc-label">Total Logs Admissions</span>
+            <div class="sc-value" id="rep-total">0</div>
+          </div>
+          <div class="stat-cell">
+            <span class="sc-label">Resting Mean HR</span>
+            <div class="sc-value" id="rep-avg-hr">0 bpm</div>
+          </div>
+          <div class="stat-cell">
+            <span class="sc-label">Average SpO₂</span>
+            <div class="sc-value" id="rep-avg-spo2">0%</div>
+          </div>
+          <div class="stat-cell">
+            <span class="sc-label">Mean Sleep Duration</span>
+            <div class="sc-value" id="rep-avg-sleep">0h</div>
+          </div>
+          <div class="stat-cell">
+            <span class="sc-label">Average Stress Level</span>
+            <div class="sc-value" id="rep-avg-stress">0 / 10</div>
+          </div>
+          <div class="stat-cell">
+            <span class="sc-label">Average Daily Steps</span>
+            <div class="sc-value" id="rep-avg-steps">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Patient Heart Rate Analytics (Bar Chart Diagram) -->
+      <div class="report-section" style="margin-top: 2rem;">
+        <h2 class="rs-title">📈 Patient Heart Rate Diagnostics (Bar Chart Diagram)</h2>
+        <div class="chart-card" style="padding: 24px; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);">
+          <canvas id="rep-heartrate-bar-chart" style="max-height: 250px; width: 100%;"></canvas>
+        </div>
+      </div>
+
+      <!-- Section 2: Anomaly Profile -->
+      <div class="report-section">
+        <h2 class="rs-title">🩺 Lab Assessment & Diagnostics</h2>
+        <div class="chart-card" style="padding: 24px;">
+          <div class="ab-bar">
+            <div id="ab-fill-normal" class="ab-fill ab-ok" style="width: 100%;"></div>
+            <div id="ab-fill-anomaly" class="ab-fill ab-danger" style="width: 0%;"></div>
+          </div>
+          <div class="anom-legend">
+            <span><span class="dot ok"></span>Normal Logs (<span id="rep-normal-pct">100</span>%)</span>
+            <span><span class="dot danger"></span>Outliers Flags (<span id="rep-anom-pct">0</span>%)</span>
+          </div>
+          
+          <div class="anom-methods">
+            <div class="am-item">
+              <b id="rep-am-clinical">0</b>
+              <small>Clinical Boundaries</small>
+            </div>
+            <div class="am-item">
+              <b id="rep-am-zscore">0</b>
+              <small>Z-Score Outliers</small>
+            </div>
+            <div class="am-item">
+              <b id="rep-am-iqr">0</b>
+              <small>IQR Outliers</small>
+            </div>
+            <div class="am-item">
+              <b id="rep-am-iforest">0</b>
+              <small>Isolation Forest ML</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Insights -->
+      <div class="report-section">
+        <h2 class="rs-title">💡 Medical Checkup Insights</h2>
+        <div id="insights-list-container">
+          <!-- Dynamic content -->
+        </div>
+      </div>
+
+      <!-- Centered Validation Seal -->
+      <div class="clinical-seal-box">
+        <div class="clinical-seal" style="border: 2px dashed var(--blue); background: var(--bg-3); padding: 1.5rem; border-radius: var(--radius); text-align: center; max-width: 420px; margin: 2rem auto;">
+          <h4 style="font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 700; color: var(--text); margin: 0;">🛡️ STRATAFORM CLINICAL BOARD 🛡️</h4>
+          <p style="font-size: 12px; font-weight: 700; color: var(--blue); text-transform: uppercase; margin-top: 4px; margin-bottom: 0;">Authenticated Diagnostic Evaluation</p>
+          <p style="font-size: 11px; margin-top: 6px; color: var(--text-2); margin-bottom: 0;">
+            Certified Strataform Vitals Validation Database Record<br/>
+            Supervised &amp; Signed By: <span id="rep-doctor-board" style="font-weight: 700;">Dr. K. Albert, MD, FACC</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Doctor Signature Block -->
+      <div class="physician-sign-block" style="display: flex; justify-content: flex-end; margin-top: 2rem;">
+        <div class="physician-sign-wrap" style="text-align: right; border-top: 1px solid var(--border); padding-top: 8px; min-width: 250px;">
+          <strong id="rep-doctor-name" style="font-family: 'Outfit', sans-serif; font-size: 14.5px; font-weight: 700;">Dr. K. Albert, MD, FACC</strong>
+          <span id="rep-doctor-title" style="display: block; font-size: 12.5px; color: var(--text-2);">Chief Cardiologist</span>
+          <span style="font-size: 10px; color: var(--text-3); margin-top: 2px; display: block;">Strataform Medical Center (Project Purpose Only)</span>
+        </div>
+      </div>
+
+      <!-- Section 4: Severe Causes & Instant Remedies (Only visible on web page, hidden in print/PDF) -->
+      <div class="report-section no-print" id="clinical-remedy-section" style="margin-top: 2rem;">
+        <h2 class="rs-title">🚨 Clinical Alerts &amp; Instant Remedies</h2>
+        <div id="remedy-list-container">
+          <!-- Dynamically populated based on severe causes -->
+        </div>
+      </div>
+
+      <!-- Medical Disclaimer -->
+      <div class="disclaimer" style="font-size: 11px; background: rgba(217, 119, 6, 0.05); border: 1px solid rgba(217, 119, 6, 0.12); padding: 1rem; border-radius: 8px; color: var(--text-2); margin-top: 2rem;">
+        <strong>⚠️ Strataform Clinic Disclaimer:</strong> The Strataform Health Anomaly Detection System is a statistical data analysis utility. The results, insights, and recommendations generated by this software are for educational purposes and should not be used as clinical diagnostic parameters. If you have cardiovascular concerns, please consult a medical practitioner.
+      </div>
+    </div>
+
+    </div>
+
+    <!-- Actions (hidden on print) -->
+    <div class="dash-actions no-print">
+      <a href="/dashboard" class="btn btn-outline btn-lg">📊 View Dashboard Charts</a>
+      <a href="/upload" class="btn btn-primary btn-lg">💉 Admission Desk</a>
+    </div>
+
+  </div>
+</div>
+
+<style>
+@page {
+  size: A4;
+  margin: 18mm 15mm 18mm 15mm;
+  @top-center {
+    content: 'STRATAFORM CLINICAL LABS — INTERNAL PATIENT REPORT';
+    font-size: 9pt;
+    color: #94a3b8;
+  }
+}
+@media print {
+  /* Hide page chrome and AI assistant */
+  nav, footer, .page-header, .no-print,
+  #report-header-actions, .tabs-header,
+  .dash-actions, .ai-chat-fab, .toast-container,
+  .mobile-menu, #theme-toggle, #nav-hamburger,
+  .gemini-glow-orb, #ai-chat-toggle, #ai-chat-drawer { display: none !important; }
+
+  /* Force both tab sections visible */
+  .tab-content { display: block !important; opacity: 1 !important; }
+
+  /* Page and body reset */
+  html, body {
+    background: #ffffff !important;
+    color: #1e293b !important;
+    font-size: 11pt !important;
+    font-family: 'Arial', 'Helvetica Neue', sans-serif !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Main container */
+  .container {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Remove card chrome for print */
+  .report-paper {
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  /* Letterhead */
+  .report-letterhead {
+    border-bottom: 2.5px solid #0284c7 !important;
+    padding-bottom: 12px !important;
+    margin-bottom: 20px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-end !important;
+  }
+
+  /* Section spacing */
+  .report-section {
+    margin-bottom: 20px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  h2.rs-title {
+    font-size: 14pt !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* Stats grid — 3 columns on print */
+  .stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  /* Make sure stat cards are bordered on print */
+  .stat-card {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    padding: 14px !important;
+    background: #f8fafc !important;
+    break-inside: avoid !important;
+  }
+
+  /* Charts — full width */
+  .charts-row-2 {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  canvas {
+    max-width: 100% !important;
+    max-height: 250px !important;
+  }
+
+  /* Anomaly table */
+  .table-wrap {
+    overflow: visible !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 9pt !important;
+  }
+
+  th, td {
+    padding: 6px 8px !important;
+    border: 1px solid #e2e8f0 !important;
+    text-align: left !important;
+  }
+
+  th {
+    background: #f1f5f9 !important;
+    font-weight: 700 !important;
+  }
+
+  /* Recs grid — 2 cols */
+  .recs-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  /* Watermark lighter for print */
+  .report-paper::after { opacity: 0.03 !important; }
+}
+</style>
+
+<script>
+  function switchReportTab(event, tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    
+    document.getElementById(tabId).classList.add('active');
+    event.currentTarget.classList.add('active');
+
+    if (tabId === 'tab-ml-models') {
+      loadMLComparison();
+    }
+  }
+
+  let mlLoaded = false;
+  function loadMLComparison() {
+    if (mlLoaded) return;
+    
+    const loading = document.getElementById('ml-loading-state');
+    const content = document.getElementById('ml-comparison-content');
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const patientId = urlParams.get('patient_id');
+    const fetchUrl = patientId ? `/api/ml_comparison?patient_id=${patientId}` : '/api/ml_comparison';
+    fetch(fetchUrl)
+      .then(res => res.json())
+      .then(data => {
+        loading.classList.add('hidden');
+        if (data.error) {
+          content.innerHTML = `<div class="alert alert-error" style="padding:15px; border-radius:10px;">⚠️ ${data.error}</div>`;
+          content.classList.remove('hidden');
+          return;
+        }
+        
+        // Render Model Cards
+        const cardsBox = document.getElementById('ml-cards-container');
+        cardsBox.innerHTML = '';
+        
+        for (const name in data.models) {
+          const model = data.models[name];
+          const cardHtml = `
+            <div class="ml-card">
+              <div>
+                <div class="ml-header">
+                  <span class="ml-name">${model.name}</span>
+                  <span class="ml-type">${model.type}</span>
+                </div>
+                <p class="ml-body">${model.description}</p>
+              </div>
+              <div class="ml-footer">
+                <div class="ml-metric-row">
+                  <span class="ml-metric-label">Cross-Val Accuracy</span>
+                  <span class="ml-metric-val" style="color:var(--text-3); font-weight:800;">${model.accuracy}%</span>
+                </div>
+                <div class="ml-metric-row">
+                  <span class="ml-metric-label">Flagged Anomalies</span>
+                  <span class="ml-metric-val">${model.anomalies_detected} cases</span>
+                </div>
+                <div class="ml-metric-row">
+                  <span class="ml-metric-label">Training Latency</span>
+                  <span class="ml-metric-val">${model.train_time} ms</span>
+                </div>
+              </div>
+            </div>
+          `;
+          cardsBox.insertAdjacentHTML('beforeend', cardHtml);
+        }
+
+        // Render Feature Importances
+        const featBox = document.getElementById('ml-features-container');
+        featBox.innerHTML = '';
+        data.feature_importances.forEach(item => {
+          const barWidth = Math.max(8, item.importance);
+          const featHtml = `
+            <div>
+              <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:700; color:var(--text); margin-bottom:4px;">
+                <span>${item.feature}</span>
+                <span>${item.importance}%</span>
+              </div>
+              <div style="background:var(--bg-3); height:12px; border-radius:99px; overflow:hidden;">
+                <div style="background:var(--blue); width:${barWidth}%; height:100%; border-radius:99px; transition: var(--transition);"></div>
+              </div>
+            </div>
+          `;
+          featBox.insertAdjacentHTML('beforeend', featHtml);
+        });
+        
+        content.classList.remove('hidden');
+        mlLoaded = true;
+      })
+      .catch(err => {
+        console.error(err);
+        loading.innerHTML = `<p style="color:var(--red); font-weight:700;">❌ Failed to run machine learning pipeline.</p>`;
+      });
+  }
+</script>
+{% endblock %}

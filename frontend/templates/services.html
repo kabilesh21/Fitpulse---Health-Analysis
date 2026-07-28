@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header" style="position: relative; overflow: hidden;">
+  <!-- Floating background toys specific to services page -->
+  <div class="toy-container">
+    <div class="toy toy-pill-1" style="top: 10%; left: 5%;">💊</div>
+    <div class="toy toy-pill-2" style="bottom: 15%; right: 5%;">💊</div>
+    <div class="toy toy-stethoscope" style="top: 25%; right: 20%;">🩺</div>
+    <div class="toy toy-bandaid" style="bottom: 20%; left: 15%;">🩹</div>
+  </div>
+  
+  <div class="container">
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-title">Clinic Services 🏥</h1>
+        <p class="page-sub">Explore the specialized vitals diagnostics and laboratory assessments conducted at Strataform.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container" style="padding-top: 4rem; padding-bottom: 6rem;">
+  <div class="features-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2.5rem;">
+    <!-- Service 1 -->
+    <div class="feature-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div class="fc-icon" style="font-size: 32px; margin-bottom: 20px;">❤️</div>
+        <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 12px;">Electrocardiography (ECG) Analysis</h3>
+        <p style="font-size: 14.5px; color: var(--text-2); line-height: 1.6;">
+          Our laboratory runs continuous heart rate tracking algorithms to evaluate resting cardiac baseline values. It automatically flags sudden spikes or drops that occur outside standard physiological boundaries.
+        </p>
+      </div>
+      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-3); font-weight: 600;">
+        🔬 Core Diagnostic Assessment
+      </div>
+    </div>
+
+    <!-- Service 2 -->
+    <div class="feature-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div class="fc-icon purple" style="font-size: 32px; margin-bottom: 20px;">🏃</div>
+        <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 12px;">Activity & Pedometery Logs</h3>
+        <p style="font-size: 14.5px; color: var(--text-2); line-height: 1.6;">
+          Tracks physical movement patterns in steps/day to correlate heart rates with physical effort. We filter negative steps, duplicates, and impossible activity metrics to compile clean baseline activity profiles.
+        </p>
+      </div>
+      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-3); font-weight: 600;">
+        🧼 Imputation & Cleaning Pipeline
+      </div>
+    </div>
+
+    <!-- Service 3 -->
+    <div class="feature-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div class="fc-icon green" style="font-size: 32px; margin-bottom: 20px;">🧬</div>
+        <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 12px;">Machine Learning Outliers</h3>
+        <p style="font-size: 14.5px; color: var(--text-2); line-height: 1.6;">
+          Uses unsupervised Isolation Forest tree structures to isolate complex multivariate anomalies (such as tachycardia heart rate spikes occurring while steps are zero, indicating acute cardiovascular stress).
+        </p>
+      </div>
+      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-3); font-weight: 600;">
+        🌲 Isolation Forest Model
+      </div>
+    </div>
+
+    <!-- Service 4 -->
+    <div class="feature-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div class="fc-icon" style="font-size: 32px; margin-bottom: 20px; background: var(--purple-bg); color: var(--purple);">📝</div>
+        <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 12px;">Clinical PDF Certifications</h3>
+        <p style="font-size: 14.5px; color: var(--text-2); line-height: 1.6;">
+          Compiles full diagnostics reports into a signed clinical-grade PDF format. Incorporates double-bordered validation seals, diagonal watermarks, and signature sign-offs for patient reference.
+        </p>
+      </div>
+      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-3); font-weight: 600;">
+        🛡️ Certified Print Release
+      </div>
+    </div>
+  </div>
+
+  <!-- Medical Checkup Banner -->
+  <div style="background: var(--bg-2); border: 1px solid var(--border-glow); padding: 3rem; border-radius: var(--radius-lg); margin-top: 4rem; text-align: center; box-shadow: var(--shadow); position: relative; overflow: hidden;">
+    <div class="toy" style="font-size: 40px; position: absolute; left: 10%; top: 20%; animation: float-toy 6s ease-in-out infinite alternate;">🌡️</div>
+    <div class="toy" style="font-size: 40px; position: absolute; right: 10%; bottom: 20%; animation: float-toy 5s ease-in-out infinite alternate-reverse;">🧪</div>
+    
+    <h3 style="font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 800; margin-bottom: 12px;">Ready for a Vitals Diagnostics Checkup?</h3>
+    <p style="color: var(--text-2); max-width: 500px; margin: 0 auto 24px; font-size: 15px;">Admission desk is open 24/7. Upload your wearable device logs to compile your charts instantly.</p>
+    <a href="/upload" class="btn btn-primary btn-lg">💉 Enter Admission Desk</a>
+  </div>
+</div>
+{% endblock %}
