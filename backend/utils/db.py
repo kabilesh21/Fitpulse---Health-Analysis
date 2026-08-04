@@ -10,10 +10,77 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "fitpulse.db")
 
+class TiDBCursorWrapper:
+    def __init__(self, cursor):
+        self.cursor = cursor
+        
+    def execute(self, sql, params=None):
+        sql_converted = sql.replace("?", "%s")
+        sql_converted = sql_converted.replace("AUTOINCREMENT", "AUTO_INCREMENT")
+        # In MySQL, UNIQUE INDEX creation does not support 'IF NOT EXISTS' inline, but we handle it
+        # Also convert DATETIME types if necessary (REAL, TEXT are fine)
+        return self.cursor.execute(sql_converted, params)
+        
+    def fetchone(self):
+        return self.cursor.fetchone()
+        
+    def fetchall(self):
+        return self.cursor.fetchall()
+        
+    @property
+    def lastrowid(self):
+        return self.cursor.lastrowid
+
+class TiDBConnectionWrapper:
+    def __init__(self, conn):
+        self.conn = conn
+        
+    def cursor(self):
+        return TiDBCursorWrapper(self.conn.cursor())
+        
+    def execute(self, sql, params=None):
+        cursor = self.cursor()
+        cursor.execute(sql, params)
+        return cursor
+        
+    def commit(self):
+        try:
+            self.conn.commit()
+        except Exception:
+            pass
+        
+    def close(self):
+        try:
+            self.conn.close()
+        except Exception:
+            pass
+
 def get_db():
-    conn = sqlite3.connect(DB_PATH, timeout=30.0)
-    conn.row_factory = sqlite3.Row
-    return conn
+    tidb_host = os.environ.get("TIDB_HOST")
+    if tidb_host:
+        import pymysql
+        from pymysql.cursors import DictCursor
+        
+        port = int(os.environ.get("TIDB_PORT", 4000))
+        user = os.environ.get("TIDB_USER")
+        password = os.environ.get("TIDB_PASSWORD")
+        db = os.environ.get("TIDB_DB", "fitpulse")
+        
+        connection = pymysql.connect(
+            host=tidb_host,
+            port=port,
+            user=user,
+            password=password,
+            database=db,
+            ssl={"ssl": {}},
+            cursorclass=DictCursor,
+            autocommit=True
+        )
+        return TiDBConnectionWrapper(connection)
+    else:
+        conn = sqlite3.connect(DB_PATH, timeout=30.0)
+        conn.row_factory = sqlite3.Row
+        return conn
 
 def init_db():
     conn = get_db()
@@ -67,35 +134,39 @@ def init_db():
     
     try:
         conn.execute("ALTER TABLE users ADD COLUMN email TEXT")
-    except sqlite3.OperationalError:
+    except Exception:
         pass
     try:
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)")
-    except sqlite3.OperationalError:
-        pass
+    except Exception:
+        # In MySQL, we create unique index manually if fail
+        try:
+            conn.execute("CREATE UNIQUE INDEX idx_users_email ON users(email)")
+        except Exception:
+            pass
     try:
         conn.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'patient'")
-    except sqlite3.OperationalError:
+    except Exception:
         pass
     try:
         conn.execute("ALTER TABLE users ADD COLUMN purpose TEXT DEFAULT 'Routine Check'")
-    except sqlite3.OperationalError:
+    except Exception:
         pass
     try:
         conn.execute("ALTER TABLE users ADD COLUMN cleaning_logs TEXT DEFAULT '[]'")
-    except sqlite3.OperationalError:
+    except Exception:
         pass
     try:
         conn.execute("ALTER TABLE health_records ADD COLUMN selected_doctor TEXT DEFAULT 'Dr. K. Albert'")
-    except sqlite3.OperationalError:
+    except Exception:
         pass
     try:
         conn.execute("ALTER TABLE users ADD COLUMN reset_token TEXT")
-    except sqlite3.OperationalError:
+    except Exception:
         pass
     try:
         conn.execute("ALTER TABLE users ADD COLUMN reset_token_expiry TEXT")
-    except sqlite3.OperationalError:
+    except Exception:
         pass
     
     # Seed or update Dr. K. Albert and Dr. D. Suganya to ensure correct credentials
