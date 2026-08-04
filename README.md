@@ -84,3 +84,24 @@ Fitpulse---Health-Analysis-main/
 * **Admission Checklist**: A checklist manager to track admitting, logging, analyzing, and discharging stages.
 * **Login History Audit Trail**: Chronological day-by-day logs tracking patient sign-ins.
 * **Downloadable Portal Access Reports**: Generates a professional tabular access audit sheet that is downloaded directly as an HTML report for internal clinical security reviews.
+
+---
+
+## 📸 Platform Screenshots
+
+### 1. Landing Page / Portal Entry
+![Landing Page](frontend/static/img/landing_page.png)
+*The landing page serves as the entry portal for the clinical application. It provides patients, physicians, and staff with direct links to access their respective diagnostic workspaces or telemetry models.*
+
+### 2. Patient Sign-In & Registration
+![Login Page](frontend/static/img/login_page.png)
+*The authentication page features dual-mode logins via username or email address and password show/hide toggles. It allows new patients to register their demographics and clinical checkup purposes securely.*
+
+### 3. Clinical Admission Desk (Data Upload)
+![Admission Desk](frontend/static/img/admission_desk.png)
+*The admission desk allows patients to upload wearable CSV/Excel datasets or log their vitals manually. It lists available consulting doctors and outlines required dataset column schemas.*
+
+### 4. Interactive Vitals Dashboard
+![Dashboard Page](frontend/static/img/dashboard_page.png)
+*The interactive dashboard displays vital averages, cardiovascular risk assessments, and outlier counts using Chart.js waveforms. It provides scatter charts of normal versus anomaly readings for clinical review.*
+
