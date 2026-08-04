@@ -65,7 +65,14 @@ def init_db():
     )
     """)
     
-    # Run migrations in case database tables already exist from previous steps
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN email TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)")
+    except sqlite3.OperationalError:
+        pass
     try:
         conn.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'patient'")
     except sqlite3.OperationalError:
@@ -82,6 +89,14 @@ def init_db():
         conn.execute("ALTER TABLE health_records ADD COLUMN selected_doctor TEXT DEFAULT 'Dr. K. Albert'")
     except sqlite3.OperationalError:
         pass
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN reset_token TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN reset_token_expiry TEXT")
+    except sqlite3.OperationalError:
+        pass
     
     # Seed or update Dr. K. Albert and Dr. D. Suganya to ensure correct credentials
     cursor = conn.cursor()
@@ -92,32 +107,32 @@ def init_db():
         # Check Albert
         albert_exists = cursor.execute("SELECT id FROM users WHERE username = 'Dr. K. Albert'").fetchone()
         if albert_exists:
-            cursor.execute("UPDATE users SET password_hash = ?, role = 'doctor', age = 45, gender = 'Male', purpose = 'Chief Cardiologist' WHERE username = 'Dr. K. Albert'", (albert_hash,))
+            cursor.execute("UPDATE users SET password_hash = ?, role = 'doctor', age = 45, gender = 'Male', purpose = 'Chief Cardiologist', email = 'albert@strataform.med' WHERE username = 'Dr. K. Albert'", (albert_hash,))
         else:
-            cursor.execute("INSERT INTO users (username, password_hash, age, gender, role, purpose) VALUES (?, ?, ?, ?, ?, ?)",
-                           ("Dr. K. Albert", albert_hash, 45, "Male", "doctor", "Chief Cardiologist"))
+            cursor.execute("INSERT INTO users (username, email, password_hash, age, gender, role, purpose) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                           ("Dr. K. Albert", "albert@strataform.med", albert_hash, 45, "Male", "doctor", "Chief Cardiologist"))
                            
         # Check Suganya
         suganya_exists = cursor.execute("SELECT id FROM users WHERE username = 'Dr. D. Suganya'").fetchone()
         if suganya_exists:
-            cursor.execute("UPDATE users SET password_hash = ?, role = 'doctor', age = 42, gender = 'Female', purpose = 'Senior Neurology Consultant' WHERE username = 'Dr. D. Suganya'", (suganya_hash,))
+            cursor.execute("UPDATE users SET password_hash = ?, role = 'doctor', age = 42, gender = 'Female', purpose = 'Senior Neurology Consultant', email = 'suganya@strataform.med' WHERE username = 'Dr. D. Suganya'", (suganya_hash,))
         else:
-            cursor.execute("INSERT INTO users (username, password_hash, age, gender, role, purpose) VALUES (?, ?, ?, ?, ?, ?)",
-                           ("Dr. D. Suganya", suganya_hash, 42, "Female", "doctor", "Senior Neurology Consultant"))
+            cursor.execute("INSERT INTO users (username, email, password_hash, age, gender, role, purpose) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                           ("Dr. D. Suganya", "suganya@strataform.med", suganya_hash, 42, "Female", "doctor", "Senior Neurology Consultant"))
     except Exception as e:
         print("Seeding failed:", e)
 
     conn.commit()
     conn.close()
 
-def register_user(username, password, age=30, gender="Male", role="patient", purpose="Routine Check"):
+def register_user(username, email, password, age=30, gender="Male", role="patient", purpose="Routine Check"):
     conn = get_db()
     password_hash = generate_password_hash(password)
     try:
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO users (username, password_hash, age, gender, role, purpose) VALUES (?, ?, ?, ?, ?, ?)",
-            (username.strip(), password_hash, age, gender, role, purpose)
+            "INSERT INTO users (username, email, password_hash, age, gender, role, purpose) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (username.strip(), email.strip().lower() if email else None, password_hash, age, gender, role, purpose)
         )
         conn.commit()
         user_id = cursor.lastrowid
@@ -127,10 +142,13 @@ def register_user(username, password, age=30, gender="Male", role="patient", pur
     finally:
         conn.close()
 
-def verify_user(username, password):
+def verify_user(username_or_email, password):
     conn = get_db()
     try:
-        user = conn.execute("SELECT * FROM users WHERE username = ?", (username.strip(),)).fetchone()
+        user = conn.execute(
+            "SELECT * FROM users WHERE username = ? OR LOWER(email) = ?", 
+            (username_or_email.strip(), username_or_email.strip().lower())
+        ).fetchone()
         if user and check_password_hash(user["password_hash"], password):
             return dict(user)
         return None

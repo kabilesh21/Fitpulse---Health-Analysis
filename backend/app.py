@@ -70,16 +70,17 @@ def index():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        username = request.form.get("username", "")
+        username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip()
         password = request.form.get("password", "")
         age = int(request.form.get("age", 30))
         gender = request.form.get("gender", "Male")
         purpose = request.form.get("purpose", "Routine Check")
         
-        if not username or not password:
-            return render_template("login.html", register_error="Please fill out all registration fields.")
+        if not username or not password or not email:
+            return render_template("login.html", register_error="Please fill out all registration fields including Email.")
             
-        user_id = register_user(username, password, age, gender, role="patient", purpose=purpose)
+        user_id = register_user(username, email, password, age, gender, role="patient", purpose=purpose)
         if user_id:
             record_login(user_id)
             session["user_id"] = user_id
@@ -87,17 +88,17 @@ def register():
             session["role"] = "patient"
             return redirect(url_for("upload"))
         else:
-            return render_template("login.html", register_error="Username already exists.")
+            return render_template("login.html", register_error="Username or Email already exists.")
             
     return redirect(url_for("login"))
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form.get("username", "")
+        username_or_email = request.form.get("username", "").strip()
         password = request.form.get("password", "")
         
-        user = verify_user(username, password)
+        user = verify_user(username_or_email, password)
         if user:
             record_login(user["id"])
             session["user_id"] = user["id"]
@@ -695,5 +696,183 @@ def api_update_profile():
     finally:
         conn.close()
 
+@app.route("/forgot_password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        if not email:
+            return render_template("forgot_password.html", error="Email is required.")
+            
+        token = generate_and_save_reset_token(email)
+        if token:
+            reset_link = url_for("reset_password", token=token, _external=True)
+            success = send_reset_email(email, reset_link)
+            if success:
+                return render_template("forgot_password.html", success="A reset link has been successfully sent to your email.")
+            else:
+                return render_template("forgot_password.html", error="Failed to send reset email. Please contact support.")
+        else:
+            return render_template("forgot_password.html", error="Email address not registered in our clinical system.")
+            
+    return render_template("forgot_password.html")
+
+@app.route("/reset_password", methods=["GET", "POST"])
+def reset_password():
+    token = request.args.get("token") or request.form.get("token")
+    if not token:
+        return redirect(url_for("login"))
+        
+    from datetime import datetime
+    conn = get_db()
+    user = conn.execute("SELECT id, reset_token_expiry FROM users WHERE reset_token = ?", (token,)).fetchone()
+    conn.close()
+    
+    if not user or user["reset_token_expiry"] < datetime.now().isoformat():
+        return render_template("reset_password.html", error="The reset link is invalid or has expired.", show_form=False)
+        
+    if request.method == "POST":
+        password = request.form.get("password")
+        confirm_password = request.form.get("confirm_password")
+        
+        if not password or len(password) < 6:
+            return render_template("reset_password.html", token=token, error="Password must be at least 6 characters.", show_form=True)
+            
+        if password != confirm_password:
+            return render_template("reset_password.html", token=token, error="Passwords do not match.", show_form=True)
+            
+        success, msg = reset_user_password_by_token(token, password)
+        if success:
+            return render_template("reset_password.html", success=msg, show_form=False)
+        else:
+            return render_template("reset_password.html", token=token, error=msg, show_form=True)
+            
+    return render_template("reset_password.html", token=token, show_form=True)
+
+def send_reset_email(to_email, reset_link):
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    
+    sender_email = "postmanmail21@gmail.com"
+    sender_password = "wecw dxpw xsjo upgt"
+    
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Strataform Password Reset Request"
+    msg["From"] = f"Strataform Care Team <{sender_email}>"
+    msg["To"] = to_email
+    
+    text = f"""
+Hello,
+
+You requested a password reset for your Strataform Clinical Labs account.
+Please click the link below to reset your password. This link is valid for 1 hour.
+
+{reset_link}
+
+If you did not request this, please ignore this email.
+
+Best regards,
+Strataform Clinic Team
+"""
+    html = f"""
+<html>
+  <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eeeeee; border-radius: 10px;">
+    <h2 style="color: #ea580c; border-bottom: 2px solid #ea580c; padding-bottom: 10px; font-family: 'Outfit', sans-serif;">Strataform Vitals Portal</h2>
+    <p>Hello,</p>
+    <p>You requested a password reset for your Strataform Clinical Labs account.</p>
+    <p>Please click the button below to choose a new password. This reset link is valid for 1 hour.</p>
+    <div style="margin: 25px 0; text-align: center;">
+      <a href="{reset_link}" style="background: linear-gradient(135deg, #f97316, #ea580c); color: white; text-decoration: none; padding: 12px 30px; border-radius: 99px; font-weight: bold; display: inline-block; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.2);">Reset Password</a>
+    </div>
+    <p>Or copy and paste this link in your browser:</p>
+    <p style="background-color: #f8fafc; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 13px; word-break: break-all;"><a href="{reset_link}">{reset_link}</a></p>
+    <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
+    <br>
+    <p style="border-top: 1px solid #eeeeee; padding-top: 15px; font-size: 12px; color: #666666;">
+      Strataform Clinical Labs — Vitals & Anomaly Diagnostics<br>
+      12/32 Nethaji Street, Kodambakkam, 600 024 | Phone: 044 2454 2454
+    </p>
+  </body>
+</html>
+"""
+    
+    part1 = MIMEText(text, "plain")
+    part2 = MIMEText(html, "html")
+    msg.attach(part1)
+    msg.attach(part2)
+    
+    try:
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, to_email, msg.as_string())
+        server.quit()
+        print(f"Reset email successfully sent to {to_email}")
+        return True
+    except Exception as e:
+        print("Failed to send email:", e)
+        return False
+
+def generate_and_save_reset_token(email):
+    import secrets
+    from datetime import datetime, timedelta
+    
+    token = secrets.token_urlsafe(32)
+    expiry = (datetime.now() + timedelta(hours=1)).isoformat()
+    
+    conn = get_db()
+    try:
+        user = conn.execute("SELECT id FROM users WHERE LOWER(email) = ?", (email.lower().strip(),)).fetchone()
+        if not user:
+            return None
+        
+        conn.execute(
+            "UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE id = ?",
+            (token, expiry, user["id"])
+        )
+        conn.commit()
+        return token
+    except Exception as e:
+        print("Error saving reset token:", e)
+        return None
+    finally:
+        conn.close()
+
+def reset_user_password_by_token(token, new_password):
+    from datetime import datetime
+    from werkzeug.security import generate_password_hash
+    
+    password_hash = generate_password_hash(new_password)
+    now_str = datetime.now().isoformat()
+    
+    conn = get_db()
+    try:
+        user = conn.execute(
+            "SELECT id, reset_token_expiry FROM users WHERE reset_token = ?", 
+            (token,)
+        ).fetchone()
+        
+        if not user:
+            return False, "Invalid or expired reset token."
+            
+        expiry_str = user["reset_token_expiry"]
+        if expiry_str < now_str:
+            return False, "The reset link has expired. Please request a new one."
+            
+        conn.execute(
+            "UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?",
+            (password_hash, user["id"])
+        )
+        conn.commit()
+        return True, "Your password has been successfully reset."
+    except Exception as e:
+        print("Error resetting password:", e)
+        return False, "Database error resetting password."
+    finally:
+        conn.close()
+
 if __name__ == "__main__":
-    app.run(debug=True, host="127.0.0.1", port=5000)
+    app.run(debug=True, use_reloader=False, host="127.0.0.1", port=5000)
+
+
+
