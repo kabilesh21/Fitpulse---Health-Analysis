@@ -1,4 +1,4 @@
-# Strataform Clinical Labs — Vitals & Anomaly Diagnostics
+# ❤️ FitPulse Health Anomaly Detection - Strataform Clinical Labs — Vitals & Anomaly Diagnostics
 
 Strataform is a web-based clinical vital analysis, dataset cleaning, and cardiac health anomaly detection system. It provides patients and physicians with automated clinical processing pipelines, interactive data visualization, real-time AI assistance, and professional audit reports.
 
