@@ -4,6 +4,9 @@ Strataform is a web-based clinical vital analysis, dataset cleaning, and cardiac
 
 ---
 
+The live link is here : https://fitpulse-health-analysis.onrender.com
+
+---
 ## 🎯 Platform Purpose
 Strataform allows users to upload, audit, clean, and visualize wearable vital records (heart rate, blood pressure, oxygen saturation, temperature, steps, sleep, and stress). It automatically highlights physiological irregularities (such as tachycardia, hypertensive spikes, fever, and hypoxemia) using statistical outlier algorithms (Clinical Boundaries, Z-Score, Interquartile Range, and Isolation Forest ML models) to deliver immediate remedies, clinical alerts, and downloadable audit trail reports.
 
