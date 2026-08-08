@@ -89,12 +89,12 @@ def init_db():
     conn.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
+        username VARCHAR(255) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
         age INTEGER DEFAULT 30,
-        gender TEXT DEFAULT 'Male',
-        role TEXT DEFAULT 'patient',
-        purpose TEXT DEFAULT 'Routine Check'
+        gender VARCHAR(255) DEFAULT 'Male',
+        role VARCHAR(255) DEFAULT 'patient',
+        purpose VARCHAR(255) DEFAULT 'Routine Check'
     )
     """)
     
@@ -103,7 +103,7 @@ def init_db():
     CREATE TABLE IF NOT EXISTS health_records (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
-        timestamp TEXT NOT NULL,
+        timestamp VARCHAR(255) NOT NULL,
         heart_rate REAL NOT NULL,
         systolic_bp REAL DEFAULT 120.0,
         diastolic_bp REAL DEFAULT 80.0,
@@ -114,11 +114,11 @@ def init_db():
         calories REAL DEFAULT 2000.0,
         stress_level REAL DEFAULT 3.0,
         risk_score REAL DEFAULT 0.0,
-        risk_level TEXT DEFAULT 'Low',
-        anomaly TEXT DEFAULT 'No',
-        anomaly_reason TEXT DEFAULT '—',
-        source TEXT NOT NULL, -- 'manual' or 'csv_upload'
-        selected_doctor TEXT DEFAULT 'Dr. K. Albert'
+        risk_level VARCHAR(255) DEFAULT 'Low',
+        anomaly VARCHAR(255) DEFAULT 'No',
+        anomaly_reason VARCHAR(255) DEFAULT '—',
+        source VARCHAR(255) NOT NULL, -- 'manual' or 'csv_upload'
+        selected_doctor VARCHAR(255) DEFAULT 'Dr. K. Albert'
     )
     """)
     
@@ -127,13 +127,13 @@ def init_db():
     CREATE TABLE IF NOT EXISTS login_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
-        login_time TEXT NOT NULL,
+        login_time VARCHAR(255) NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
     """)
     
     try:
-        conn.execute("ALTER TABLE users ADD COLUMN email TEXT")
+        conn.execute("ALTER TABLE users ADD COLUMN email VARCHAR(255)")
     except Exception:
         pass
     try:
@@ -145,27 +145,27 @@ def init_db():
         except Exception:
             pass
     try:
-        conn.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'patient'")
+        conn.execute("ALTER TABLE users ADD COLUMN role VARCHAR(255) DEFAULT 'patient'")
     except Exception:
         pass
     try:
-        conn.execute("ALTER TABLE users ADD COLUMN purpose TEXT DEFAULT 'Routine Check'")
+        conn.execute("ALTER TABLE users ADD COLUMN purpose VARCHAR(255) DEFAULT 'Routine Check'")
     except Exception:
         pass
     try:
-        conn.execute("ALTER TABLE users ADD COLUMN cleaning_logs TEXT DEFAULT '[]'")
+        conn.execute("ALTER TABLE users ADD COLUMN cleaning_logs VARCHAR(4000) DEFAULT '[]'")
     except Exception:
         pass
     try:
-        conn.execute("ALTER TABLE health_records ADD COLUMN selected_doctor TEXT DEFAULT 'Dr. K. Albert'")
+        conn.execute("ALTER TABLE health_records ADD COLUMN selected_doctor VARCHAR(255) DEFAULT 'Dr. K. Albert'")
     except Exception:
         pass
     try:
-        conn.execute("ALTER TABLE users ADD COLUMN reset_token TEXT")
+        conn.execute("ALTER TABLE users ADD COLUMN reset_token VARCHAR(255)")
     except Exception:
         pass
     try:
-        conn.execute("ALTER TABLE users ADD COLUMN reset_token_expiry TEXT")
+        conn.execute("ALTER TABLE users ADD COLUMN reset_token_expiry VARCHAR(255)")
     except Exception:
         pass
     
