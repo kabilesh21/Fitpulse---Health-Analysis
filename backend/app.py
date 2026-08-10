@@ -706,11 +706,9 @@ def forgot_password():
         token = generate_and_save_reset_token(email)
         if token:
             reset_link = url_for("reset_password", token=token, _external=True)
-            success = send_reset_email(email, reset_link)
-            if success:
-                return render_template("forgot_password.html", success="A reset link has been successfully sent to your email.")
-            else:
-                return render_template("forgot_password.html", error="Failed to send reset email. Please contact support.")
+            import threading
+            threading.Thread(target=send_reset_email, args=(email, reset_link), daemon=True).start()
+            return render_template("forgot_password.html", success="A reset link has been successfully sent to your email.")
         else:
             return render_template("forgot_password.html", error="Email address not registered in our clinical system.")
             
@@ -802,7 +800,7 @@ Strataform Clinic Team
     msg.attach(part2)
     
     try:
-        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10.0)
         server.starttls()
         server.login(sender_email, sender_password)
         server.sendmail(sender_email, to_email, msg.as_string())

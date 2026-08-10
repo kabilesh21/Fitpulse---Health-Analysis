@@ -208,8 +208,12 @@ def register_user(username, email, password, age=30, gender="Male", role="patien
         conn.commit()
         user_id = cursor.lastrowid
         return user_id
-    except sqlite3.IntegrityError:
-        return None
+    except Exception as e:
+        err_msg = str(e).lower()
+        if "unique" in err_msg or "duplicate" in err_msg or "1062" in err_msg or "integrityerror" in err_msg:
+            return None
+        print("Registration error:", e)
+        raise e
     finally:
         conn.close()
 
