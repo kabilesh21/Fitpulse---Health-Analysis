@@ -19,7 +19,8 @@ class TiDBCursorWrapper:
         sql_converted = sql_converted.replace("AUTOINCREMENT", "AUTO_INCREMENT")
         # In MySQL, UNIQUE INDEX creation does not support 'IF NOT EXISTS' inline, but we handle it
         # Also convert DATETIME types if necessary (REAL, TEXT are fine)
-        return self.cursor.execute(sql_converted, params)
+        self.cursor.execute(sql_converted, params)
+        return self
         
     def fetchone(self):
         return self.cursor.fetchone()
