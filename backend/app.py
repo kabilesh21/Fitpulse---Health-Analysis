@@ -790,7 +790,8 @@ def send_reset_email(to_email, reset_link):
     url = "https://api.resend.com/emails"
     headers = {
         "Authorization": f"Bearer {resend_api_key}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "User-Agent": "Strataform/1.0"
     }
     
     try:
