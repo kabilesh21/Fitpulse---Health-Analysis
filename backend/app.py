@@ -747,68 +747,68 @@ def reset_password():
     return render_template("reset_password.html", token=token, show_form=True)
 
 def send_reset_email(to_email, reset_link):
-    import smtplib
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
+    import json
+    import urllib.request
+    import urllib.error
+
+    resend_api_key = os.environ.get("RESEND_API_KEY")
+    if not resend_api_key:
+        print("Failed to send email: RESEND_API_KEY environment variable is not configured.")
+        return False
+        
+    sender_email = "onboarding@resend.dev"
     
-    sender_email = "postmanmail21@gmail.com"
-    sender_password = "wecw dxpw xsjo upgt"
-    
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Strataform Password Reset Request"
-    msg["From"] = f"Strataform Care Team <{sender_email}>"
-    msg["To"] = to_email
-    
-    text = f"""
-Hello,
-
-You requested a password reset for your Strataform Clinical Labs account.
-Please click the link below to reset your password. This link is valid for 1 hour.
-
-{reset_link}
-
-If you did not request this, please ignore this email.
-
-Best regards,
-Strataform Clinic Team
-"""
     html = f"""
-<html>
-  <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eeeeee; border-radius: 10px;">
-    <h2 style="color: #ea580c; border-bottom: 2px solid #ea580c; padding-bottom: 10px; font-family: 'Outfit', sans-serif;">Strataform Vitals Portal</h2>
-    <p>Hello,</p>
-    <p>You requested a password reset for your Strataform Clinical Labs account.</p>
-    <p>Please click the button below to choose a new password. This reset link is valid for 1 hour.</p>
-    <div style="margin: 25px 0; text-align: center;">
-      <a href="{reset_link}" style="background: linear-gradient(135deg, #f97316, #ea580c); color: white; text-decoration: none; padding: 12px 30px; border-radius: 99px; font-weight: bold; display: inline-block; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.2);">Reset Password</a>
-    </div>
-    <p>Or copy and paste this link in your browser:</p>
-    <p style="background-color: #f8fafc; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 13px; word-break: break-all;"><a href="{reset_link}">{reset_link}</a></p>
-    <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
-    <br>
-    <p style="border-top: 1px solid #eeeeee; padding-top: 15px; font-size: 12px; color: #666666;">
-      Strataform Clinical Labs — Vitals & Anomaly Diagnostics<br>
-      12/32 Nethaji Street, Kodambakkam, 600 024 | Phone: 044 2454 2454
-    </p>
-  </body>
-</html>
-"""
+    <html>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eeeeee; border-radius: 10px;">
+        <h2 style="color: #ea580c; border-bottom: 2px solid #ea580c; padding-bottom: 10px; font-family: 'Outfit', sans-serif;">Strataform Vitals Portal</h2>
+        <p>Hello,</p>
+        <p>You requested a password reset for your Strataform Clinical Labs account.</p>
+        <p>Please click the button below to choose a new password. This reset link is valid for 1 hour.</p>
+        <div style="margin: 25px 0; text-align: center;">
+          <a href="{reset_link}" style="background: linear-gradient(135deg, #f97316, #ea580c); color: white; text-decoration: none; padding: 12px 30px; border-radius: 99px; font-weight: bold; display: inline-block; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.2);">Reset Password</a>
+        </div>
+        <p>Or copy and paste this link in your browser:</p>
+        <p style="background-color: #f8fafc; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 13px; word-break: break-all;"><a href="{reset_link}">{reset_link}</a></p>
+        <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
+        <br>
+        <p style="border-top: 1px solid #eeeeee; padding-top: 15px; font-size: 12px; color: #666666;">
+          Strataform Clinical Labs — Vitals & Anomaly Diagnostics<br>
+          12/32 Nethaji Street, Kodambakkam, 600 024 | Phone: 044 2454 2454
+        </p>
+      </body>
+    </html>
+    """
+
+    data = {
+        "from": f"Strataform Care Team <{sender_email}>",
+        "to": [to_email],
+        "subject": "Strataform Password Reset Request",
+        "html": html
+    }
     
-    part1 = MIMEText(text, "plain")
-    part2 = MIMEText(html, "html")
-    msg.attach(part1)
-    msg.attach(part2)
+    url = "https://api.resend.com/emails"
+    headers = {
+        "Authorization": f"Bearer {resend_api_key}",
+        "Content-Type": "application/json"
+    }
     
     try:
-        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10.0)
-        server.starttls()
-        server.login(sender_email, sender_password)
-        server.sendmail(sender_email, to_email, msg.as_string())
-        server.quit()
-        print(f"Reset email successfully sent to {to_email}")
-        return True
+        req = urllib.request.Request(
+            url, 
+            data=json.dumps(data).encode("utf-8"), 
+            headers=headers, 
+            method="POST"
+        )
+        with urllib.request.urlopen(req) as response:
+            res_body = response.read().decode("utf-8")
+            print(f"Resend email sent successfully: {res_body}")
+            return True
+    except urllib.error.HTTPError as e:
+        print(f"Failed to send email via Resend (HTTP Error {e.code}): {e.read().decode('utf-8')}")
+        return False
     except Exception as e:
-        print("Failed to send email:", e)
+        print("Failed to send email via Resend:", e)
         return False
 
 def generate_and_save_reset_token(email):
